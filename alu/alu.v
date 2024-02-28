@@ -33,7 +33,13 @@ always@(*) begin
 			4'b0001:
 				begin
 					C = A - B;
-					OverflowFlag = 0;
+					if((((A >>> 15) ^ (B >>> 15)) & (((A + B)>>> 15)^ (A >>> 15)))==0) begin
+						OverflowFlag = 0;
+					end
+					else
+					begin
+						OverflowFlag =1;
+					end
 				end
 			4'b0010:
 				begin
