@@ -20,7 +20,10 @@ module check_time_and_coin(i_input_coin,i_select_item,clk,reset_n,i_trigger_retu
 		// TODO: initiate values
 		wait_time <=0;
 		o_return_coin <=0;
-		temp, x,y,z <=0;
+		temp <=0;
+		x <=0;
+		y <=0;
+		z <=0;
 	end
 
 
@@ -52,7 +55,6 @@ module check_time_and_coin(i_input_coin,i_select_item,clk,reset_n,i_trigger_retu
 				temp <= 3'b001;
 				//z--;
 			end
-			else o_return_coin <= 3'b000;
 
 			for(integer i =0; i<3; i++) begin
 				o_return_coin <= o_return_coin + temp;
