@@ -18,7 +18,7 @@ module check_time_and_coin(i_input_coin,i_select_item,clk,reset_n,i_trigger_retu
 	// initiate values
 	initial begin
 		// TODO: initiate values
-		wait_time <=0;
+		//wait_time =0;
 		o_return_coin <=0;
 		temp <=0;
 		x <=0;
@@ -31,7 +31,7 @@ module check_time_and_coin(i_input_coin,i_select_item,clk,reset_n,i_trigger_retu
 	always @(i_input_coin, i_select_item) begin
 		// TODO: update coin return time
 		// if i_input coin exist or i_select_item is 1, update the return time
-		if((i_input_coin != 0) || (i_select_item ==1)) wait_time <= 10;
+		if( i_input_coin || (i_select_item ==1)) wait_time <= 10;
 	end
 
 	always @(*) begin
@@ -41,7 +41,7 @@ module check_time_and_coin(i_input_coin,i_select_item,clk,reset_n,i_trigger_retu
 		y <= (current_total%1000)/500;
 		z <= ((current_total%1000)%500)/100;
 
-		if(wait_time == 0 || i_trigger_return == 1) begin //o_return_coin을 업데이트 해준다.
+		if(wait_time == 0 || i_trigger_return) begin //o_return_coin을 업데이트 해준다.
 
 			if(x > 0) begin
 				temp <= 3'b100;
