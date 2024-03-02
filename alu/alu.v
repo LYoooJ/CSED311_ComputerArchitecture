@@ -22,7 +22,7 @@ always@(*) begin
 			4'b0000:
 				begin 
 					C = A + B;
-					if((~((A >>> 15) ^ (B >>> 15)) & (((A + B)>>> 15)^ (A >>> 15)))==0) begin
+					if((~(A[data_width-1] ^ B[data_width-1]) & ((C[data_width-1])^ A[data_width-1]))==0) begin
 						OverflowFlag = 0;
 					end
 					else
@@ -33,7 +33,7 @@ always@(*) begin
 			4'b0001:
 				begin
 					C = A - B;
-					if((((A >>> 15) ^ (B >>> 15)) & (((A + B)>>> 15)^ (A >>> 15)))==0) begin
+					if(((A[data_width-1] ^ B[data_width-1]) & ((C[data_width-1])^ A[data_width-1]))==0) begin
 						OverflowFlag = 0;
 					end
 					else
@@ -98,7 +98,7 @@ always@(*) begin
 				end
 			4'b1101:
 				begin
-					C= A >>>1;
+					C= $signed(A) >>> 1;
 					OverflowFlag = 0;
 				end
 			4'b1110:
