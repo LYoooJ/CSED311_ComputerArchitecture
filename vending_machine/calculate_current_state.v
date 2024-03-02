@@ -26,6 +26,34 @@ input_total, output_total, return_total,current_total_nxt,wait_time,o_return_coi
 		// You don't have to worry about concurrent activations in each input vector (or array).
 		// Calculate the next current_total state.
 		
+		// Calculate total return coin value
+		input_total = 0;
+		output_total = 0;
+		return_total = 0;
+
+		// Calculate total input coin value
+		for (i = 0; i < kNumCoins; i++) begin
+			if (i_input_coin[i]) begin
+				input_total += coin_value[i];
+			end
+		end
+
+		// Calculate total output coin value (for purchasing items)
+		for (i = 0; i < kNumItems; i++) begin 
+			if (i_select_item[i] && ((current_total - output_total) >= item_price[i])) begin
+				output_total += item_price[i];
+			end
+		end
+
+		// Calculate total return coin value
+		for (i = 0; i < kNumCoins; i++) begin 
+			if (o_return_coin[i]) begin 
+				return_total += coin_value[i];
+			end
+		end
+
+		// Calculate next current_total state
+		current_total_nxt = current_total + input_total - output_total - return_total;
 	end
 
 	
@@ -34,7 +62,30 @@ input_total, output_total, return_total,current_total_nxt,wait_time,o_return_coi
 	always @(*) begin
 		// TODO: o_available_item
 		// TODO: o_output_item
+		o_available_item = 4'b0000;
+		o_output_item = 4'b0000;
 
+		for (i = 0; i < kNumItems; i++) begin
+			if (current_total >= item_price[i]) begin 
+				case(i) 
+					0: o_available_item[i] += 4'b0001 
+					1: o_available_item[i] += 4'b0010 
+					2: o_available_item[i] += 4'b0100 
+					3: o_available_item[i] += 4'b1000 
+				endcase
+			end
+		end
+
+		for (i = 0; i < kNumItems; i++) begin
+			if (i_select_item[i] && (current_total >= item_price[i])) begin
+				case(i) 
+					0: o_output_item[i] += 4'b0001 
+					1: o_output_item[i] += 4'b0010 
+					2: o_output_item[i] += 4'b0100 
+					3: o_output_item[i] += 4'b1000 
+				endcase
+			end
+		end 
 	end
  
 	
