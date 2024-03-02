@@ -32,7 +32,7 @@ input_total, output_total, return_total,current_total_nxt,wait_time,o_return_coi
 		// Calculate total input coin value
 		for (i = 0; i < `kNumCoins; i++) begin
 			if (i_input_coin[i]) begin
-				input_total += coin_value[i];
+				input_total += coin_value[i]; //bit 수 안 맞음
 			end
 		end
 
@@ -70,7 +70,7 @@ input_total, output_total, return_total,current_total_nxt,wait_time,o_return_coi
 		end
 
 		for (i = 0; i < `kNumItems; i++) begin
-			if (i_select_item[i] && (current_total >= item_price[i])) begin
+			if (i_select_item[i] && (current_total >= item_price[i])) begin //수정해야 함
 				o_output_item[i] = 1;
 			end
 		end 
