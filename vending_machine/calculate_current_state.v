@@ -17,8 +17,6 @@ input_total, output_total, return_total,current_total_nxt,wait_time,o_return_coi
 	output reg  [`kTotalBits-1:0] input_total, output_total, return_total,current_total_nxt;
 	integer i;	
 
-
-
 	
 	// Combinational logic for the next states
 	always @(*) begin
@@ -32,21 +30,21 @@ input_total, output_total, return_total,current_total_nxt,wait_time,o_return_coi
 		return_total = 0;
 
 		// Calculate total input coin value
-		for (i = 0; i < kNumCoins; i++) begin
+		for (i = 0; i < `kNumCoins; i++) begin
 			if (i_input_coin[i]) begin
 				input_total += coin_value[i];
 			end
 		end
 
 		// Calculate total output coin value (for purchasing items)
-		for (i = 0; i < kNumItems; i++) begin 
+		for (i = 0; i < `kNumItems; i++) begin 
 			if (i_select_item[i] && ((current_total - output_total) >= item_price[i])) begin
 				output_total += item_price[i];
 			end
 		end
 
 		// Calculate total return coin value
-		for (i = 0; i < kNumCoins; i++) begin 
+		for (i = 0; i < `kNumCoins; i++) begin 
 			if (o_return_coin[i]) begin 
 				return_total += coin_value[i];
 			end
@@ -65,25 +63,15 @@ input_total, output_total, return_total,current_total_nxt,wait_time,o_return_coi
 		o_available_item = 4'b0000;
 		o_output_item = 4'b0000;
 
-		for (i = 0; i < kNumItems; i++) begin
+		for (i = 0; i < `kNumItems; i++) begin
 			if (current_total >= item_price[i]) begin 
-				case(i) 
-					0: o_available_item[i] += 4'b0001 
-					1: o_available_item[i] += 4'b0010 
-					2: o_available_item[i] += 4'b0100 
-					3: o_available_item[i] += 4'b1000 
-				endcase
+				o_available_item[i] = 1;
 			end
 		end
 
-		for (i = 0; i < kNumItems; i++) begin
+		for (i = 0; i < `kNumItems; i++) begin
 			if (i_select_item[i] && (current_total >= item_price[i])) begin
-				case(i) 
-					0: o_output_item[i] += 4'b0001 
-					1: o_output_item[i] += 4'b0010 
-					2: o_output_item[i] += 4'b0100 
-					3: o_output_item[i] += 4'b1000 
-				endcase
+				o_output_item[i] = 1;
 			end
 		end 
 	end
