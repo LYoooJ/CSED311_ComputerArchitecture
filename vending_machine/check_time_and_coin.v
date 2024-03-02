@@ -18,8 +18,7 @@ module check_time_and_coin(i_input_coin,i_select_item,clk,reset_n,i_trigger_retu
 	// initiate values
 	initial begin
 		// TODO: initiate values
-		//wait_time =0;
-		o_return_coin =`kNumCoins'b000;
+		o_return_coin = 0;
 		wait_time =0;
 		temp =0;
 		x =0;
@@ -46,20 +45,17 @@ module check_time_and_coin(i_input_coin,i_select_item,clk,reset_n,i_trigger_retu
 
 			if(x > 0) begin
 				temp = 3'b100;
-				//x --;
+				o_return_coin <= o_return_coin + temp;
 			end
 			else if(y>0) begin
 				temp = 3'b010;
-				//y--;
+				o_return_coin <= o_return_coin + temp;
 			end
 			else if(z>0) begin
 				temp = 3'b001;
-				//z--;
-			end
-
-			for(integer i =0; i<3; i++) begin
 				o_return_coin <= o_return_coin + temp;
 			end
+
 		end
 	end
 
@@ -67,7 +63,7 @@ module check_time_and_coin(i_input_coin,i_select_item,clk,reset_n,i_trigger_retu
 		if (!reset_n) begin
 		// TODO: reset all states.
 		wait_time <=0;
-		//o_return_coin <=0;
+		o_return_coin <=0;
 		end
 		else begin
 		// TODO: update all states.
