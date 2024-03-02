@@ -19,11 +19,12 @@ module check_time_and_coin(i_input_coin,i_select_item,clk,reset_n,i_trigger_retu
 	initial begin
 		// TODO: initiate values
 		//wait_time =0;
-		o_return_coin <=0;
-		temp <=0;
-		x <=0;
-		y <=0;
-		z <=0;
+		o_return_coin =`kNumCoins'b000;
+		wait_time =0;
+		temp =0;
+		x =0;
+		y =0;
+		z =0;
 	end
 
 
@@ -31,28 +32,28 @@ module check_time_and_coin(i_input_coin,i_select_item,clk,reset_n,i_trigger_retu
 	always @(i_input_coin, i_select_item) begin
 		// TODO: update coin return time
 		// if i_input coin exist or i_select_item is 1, update the return time
-		if( i_input_coin || (i_select_item ==1)) wait_time <= 10;
+		if( (i_input_coin !=0) || (i_select_item ==1)) wait_time <= 10;
 	end
 
 	always @(*) begin
 		// TODO: o_return_coin
 		//각각 필요한 동전의 개수
-		x <= current_total/1000;
-		y <= (current_total%1000)/500;
-		z <= ((current_total%1000)%500)/100;
+		x = current_total/1000;
+		y = (current_total%1000)/500;
+		z = ((current_total%1000)%500)/100;
 
 		if(wait_time == 0 || i_trigger_return) begin //o_return_coin을 업데이트 해준다.
 
 			if(x > 0) begin
-				temp <= 3'b100;
+				temp = 3'b100;
 				//x --;
 			end
 			else if(y>0) begin
-				temp <= 3'b010;
+				temp = 3'b010;
 				//y--;
 			end
 			else if(z>0) begin
-				temp <= 3'b001;
+				temp = 3'b001;
 				//z--;
 			end
 
@@ -66,7 +67,7 @@ module check_time_and_coin(i_input_coin,i_select_item,clk,reset_n,i_trigger_retu
 		if (!reset_n) begin
 		// TODO: reset all states.
 		wait_time <=0;
-		o_return_coin <=0;
+		//o_return_coin <=0;
 		end
 		else begin
 		// TODO: update all states.
