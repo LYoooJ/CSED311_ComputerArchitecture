@@ -23,10 +23,12 @@ always@(*) begin
 				begin 
 					C = A + B;
 					if((~(A[data_width-1] ^ B[data_width-1]) & ((C[data_width-1])^ A[data_width-1]))==0) begin
+						//if overflow doesn't occur
 						OverflowFlag = 0;
 					end
 					else
 					begin
+						//if overflow occurs
 						OverflowFlag =1;
 					end
 				end
