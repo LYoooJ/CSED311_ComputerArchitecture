@@ -45,10 +45,10 @@ module check_time_and_coin(i_input_coin,o_output_item,i_trigger_return,clk,reset
 				o_return_coin = 3'b100;
 			end
 			if(current_total - coin_value[2] >= coin_value[1]) begin
-				o_return_coin = 3'b010;
+				o_return_coin = o_return_coin + 3'b010;
 			end
 			if(current_total - coin_value[2]- coin_value[1] >= coin_value[0]) begin
-				o_return_coin = 3'b001;
+				o_return_coin = o_return_coin + 3'b001;
 			end
 
 		end
