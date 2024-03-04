@@ -19,7 +19,6 @@ module check_time_and_coin(i_input_coin,o_output_item,i_trigger_return,clk,reset
 		// TODO: initiate values
 		o_return_coin = 0;
 		wait_time = `kWaitTime; // 시작을 10초로 시작
-		coin_value[2], coin_value[1], coin_value[0] =0;
 	end
 
 
