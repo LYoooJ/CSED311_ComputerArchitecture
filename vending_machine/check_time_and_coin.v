@@ -26,7 +26,7 @@ module check_time_and_coin(i_input_coin,o_output_item,i_select_item,i_trigger_re
 	always @(i_input_coin,o_output_item, i_trigger_return) begin
 		// TODO: update coin return time
 		// if i_input coin exist or i_select_item is 1, update the return time
-		if(i_input_coin || o_output_item)begin
+		if((i_input_coin != 0) || (o_output_item != 0))begin
 			wait_time <= `kWaitTime;
 		end
 		if(i_trigger_return) begin
