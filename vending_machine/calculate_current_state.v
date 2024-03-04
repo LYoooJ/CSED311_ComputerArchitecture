@@ -31,7 +31,7 @@ current_total_nxt,wait_time,o_return_coin,o_available_item,o_output_item);
 		output_total = 0;
 		return_total = 0;
 
-		if (wait_time != 0) begin
+		if (wait_time > 0) begin
 			// Calculate total input coin value
 			for (i = 0; i < `kNumCoins; i++) begin
 				if (i_input_coin[i]) begin
@@ -45,14 +45,15 @@ current_total_nxt,wait_time,o_return_coin,o_available_item,o_output_item);
 					output_total = output_total + item_price[i];
 				end
 			end
-
-			// Calculate total return coin value
-			for (i = 0; i < `kNumCoins; i++) begin 
-				if (o_return_coin[i]) begin 
-					return_total = return_total + coin_value[i];
-				end
+		end
+		
+		// Calculate total return coin value
+		for (i = 0; i < `kNumCoins; i++) begin 
+			if (o_return_coin[i]) begin 
+				return_total = return_total + coin_value[i];
 			end
 		end
+		
 		// Calculate next current_total state
 		current_total_nxt = current_total + input_total - output_total - return_total;
 	end

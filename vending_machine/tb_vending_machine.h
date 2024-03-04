@@ -101,6 +101,7 @@ void ReturnTest(int current, Vvending_machine* dut, VerilatedVcdC* m_trace) {
         return_coin[0] = dut->o_return_coin & 1;
         return_coin[1] = (dut->o_return_coin >> 1) & 1;
         return_coin[2] = (dut->o_return_coin >> 2) & 1;
+        
         if (return_coin[0]) current = current - 100;
         if (return_coin[1]) current = current - 500;
         if (return_coin[2]) current = current - 1000;
@@ -111,7 +112,7 @@ void ReturnTest(int current, Vvending_machine* dut, VerilatedVcdC* m_trace) {
         printf("PASSED : return %d \n", total_current);
         success++;
     } else {
-        printf("FAILED : return %d \n", total_current);
+        printf("FAILED : return %d, current: %d \n", total_current, current);
     }
 }
 
