@@ -54,8 +54,8 @@ module check_time_and_coin(i_input_coin,o_output_item,i_trigger_return,clk,reset
 			end
 			else begin o_return_coin[0] = 1'b0; end
 		//end
-		if(wait_time==0) o_return_coin = 3'b000;
-		else o_return_coin = o_return_coin;
+		if(wait_time!=0) o_return_coin = 3'b000; // wait time이 0이 아니면 그냥 0으로 가지고 있기
+		else o_return_coin = o_return_coin; //wait time 이 0이면 o_return_coin 계산한걸로 리턴
 	end
 
 	always @(posedge clk ) begin
