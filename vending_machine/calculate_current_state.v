@@ -44,15 +44,15 @@ current_total_nxt,wait_time,o_return_coin,o_available_item,o_output_item);
 				if (i_select_item[i] && ((current_total - output_total) >= item_price[i])) begin
 					output_total = output_total + item_price[i];
 				end
-			end
+			end	
+		end
 
-			// Calculate total return coin value
+				// Calculate total return coin value
 			for (i = 0; i < `kNumCoins; i++) begin 
 				if (o_return_coin[i]) begin 
 					return_total = return_total + coin_value[i];
 				end
 			end
-		end
 		// Calculate next current_total state
 		current_total_nxt = current_total + input_total - output_total - return_total;
 	end
