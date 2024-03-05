@@ -52,9 +52,6 @@ current_total_nxt,wait_time,o_return_coin,o_available_item,o_output_item);
 			end
 		end
 
-		if (return_total != 0) begin
-			$display("return_total: ", return_total);
-		end
 		// Calculate next current_total state
 		current_total_nxt = current_total + input_total - output_total - return_total;
 	end

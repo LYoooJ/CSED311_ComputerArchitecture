@@ -17,10 +17,6 @@ module change_state(clk,reset_n,current_total_nxt,current_total);
 		else begin
 			// TODO: update all states.
 			current_total <= current_total_nxt;
-			if (current_total != 0) begin
-				$display("current_total: ", current_total);
-				$display("current_total_nxt: ", current_total_nxt);
-			end
 		end
 	end
 endmodule 

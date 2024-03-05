@@ -93,6 +93,7 @@ void Wait_10cycle(Vvending_machine* dut, VerilatedVcdC* m_trace) {
         printf("FAILED : wait 10 cycle \n");
     }
 }
+
 void ReturnTest(int current, Vvending_machine* dut, VerilatedVcdC* m_trace) {
     test_num++;
     int total_current = current;
@@ -104,11 +105,6 @@ void ReturnTest(int current, Vvending_machine* dut, VerilatedVcdC* m_trace) {
         if (return_coin[0]) current = current - 100;
         if (return_coin[1]) current = current - 500;
         if (return_coin[2]) current = current - 1000;
-
-        if (return_coin[2] || return_coin[1] || return_coin[0]) {
-            printf("[2]: %d, [1]: %d, [0]: %d \n", return_coin[2], return_coin[1], return_coin[0]);
-            printf("ReturnTest current: %d\n", current);
-        }
         next_cycle(dut, m_trace);
     }
 
@@ -116,7 +112,7 @@ void ReturnTest(int current, Vvending_machine* dut, VerilatedVcdC* m_trace) {
         printf("PASSED : return %d \n", total_current);
         success++;
     } else {
-        printf("FAILED : return %d, current: %d \n", total_current, current);
+        printf("FAILED : return %d \n", total_current);
     }
 }
 
