@@ -17,7 +17,7 @@ module check_time_and_coin(i_input_coin,o_output_item,i_trigger_return,clk,reset
 	// initiate values
 	initial begin
 		// TODO: initiate values
-		o_return_coin = 0;
+		o_return_coin = 3'b000;
 		wait_time = `kWaitTime; // 시작을 10초로 시작
 	end
 
@@ -38,7 +38,7 @@ module check_time_and_coin(i_input_coin,o_output_item,i_trigger_return,clk,reset
 	always @(*) begin
 		// TODO: o_return_coin
 		//o_return_coin = 3'b000;
-		//if((wait_time == 0 || i_trigger_return) && current_total >0) begin //o_return_coin을 업데이트 해주어야 하는 조건... 수정해야할지도
+		if(wait_time == 0 || i_trigger_return) begin //o_return_coin을 업데이트 해주어야 하는 조건
 			if(current_total >= coin_value[2]) begin
 				o_return_coin[2] = 1'b1;
 			end
@@ -53,8 +53,9 @@ module check_time_and_coin(i_input_coin,o_output_item,i_trigger_return,clk,reset
 				o_return_coin[0] = 1'b1;
 			end
 			else begin o_return_coin[0] = 1'b0; end
-		//end
-		if(wait_time!=0) o_return_coin = 3'b000; // wait time이 0이 아니면 그냥 0으로 가지고 있기
+		end
+
+		if(wait_time!=0) o_return_coin = 3'b000; // wait time이 0이 아니면 계산을 위해 다시 0으로
 		else o_return_coin = o_return_coin; //wait time 이 0이면 o_return_coin 계산한걸로 리턴
 	end
 
