@@ -18,10 +18,10 @@ module check_time_and_coin(i_input_coin,o_output_item,i_trigger_return,clk,reset
 	initial begin
 		// TODO: initiate values
 		o_return_coin = 3'b000;
-		wait_time = `kWaitTime; // 시작을 10초로 시작
+		wait_time = `kWaitTime + 1; // 시작을 10초로 시작
 	end
 
-
+		
 	// // update coin return time
 	// always @(i_input_coin, o_output_item, i_trigger_return) begin
 	// 	// TODO: update coin return time // 여기 다시 생각해야함
@@ -40,6 +40,7 @@ module check_time_and_coin(i_input_coin,o_output_item,i_trigger_return,clk,reset
 		//o_return_coin = 3'b000;
 		if(wait_time == 0 || i_trigger_return) begin //o_return_coin을 업데이트 해주어야 하는 조건
 			if (current_total > 0) begin
+				$display("wait_time: ", wait_time);
 				if(current_total >= coin_value[2]) begin
 					o_return_coin[2] = 1'b1;
 				end
@@ -61,9 +62,9 @@ module check_time_and_coin(i_input_coin,o_output_item,i_trigger_return,clk,reset
 		end
 		// $display(o_return_coin);
 		// $display(current_total);
-		if (o_return_coin != 0) begin
-			$display(o_return_coin);
-		end
+		//if (o_return_coin != 0) begin
+		//	$display(o_return_coin);
+		//end
 		 if(wait_time!=0) o_return_coin = 3'b000; // wait time이 0이 아니면 계산을 위해 다시 0으로
 		 else o_return_coin = o_return_coin; //wait time 이 0이면 o_return_coin 계산한걸로 리턴
 	end
@@ -72,14 +73,17 @@ module check_time_and_coin(i_input_coin,o_output_item,i_trigger_return,clk,reset
 		if (!reset_n) begin
 		// TODO: reset all states.
 		//처음 initial이랑 똑같이 초기화 시켜줌 post edge에 맞춰서
-		wait_time <=`kWaitTime;
+		wait_time <=`kWaitTime + 1;
 		//o_return_coin <= 0;
 		end
 		if((i_input_coin != 0) || (o_output_item != 0))begin //output item이 있거나, input coin이 들어갔을 때 10초로 다시 갱신
-			wait_time <= `kWaitTime;
+			wait_time <= `kWaitTime + 1;
 		end
 		else if(i_trigger_return) begin //triger return 된다면 wait time =0 으로 초기화
-			wait_time <= 0;
+			wait_time <= 3;
+			if(wait_time > 0) begin // wait time 0이면 0
+				wait_time <= wait_time -1;
+			end
 		end
 		else begin
 			if(wait_time > 0) begin // wait time 0이면 0
