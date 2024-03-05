@@ -102,6 +102,7 @@ void ReturnTest(int current, Vvending_machine* dut, VerilatedVcdC* m_trace) {
         return_coin[1] = (dut->o_return_coin >> 1) & 1;
         return_coin[2] = (dut->o_return_coin >> 2) & 1;
         
+        //printf("[2]: %d, [1]: %d, [0]: %d \n", return_coin[2], return_coin[1], return_coin[0]);
         if (return_coin[0]) current = current - 100;
         if (return_coin[1]) current = current - 500;
         if (return_coin[2]) current = current - 1000;

@@ -31,28 +31,30 @@ current_total_nxt,wait_time,o_return_coin,o_available_item,o_output_item);
 		output_total = 0;
 		return_total = 0;
 
-		if (wait_time != 0) begin
-			// Calculate total input coin value
-			for (i = 0; i < `kNumCoins; i++) begin
-				if (i_input_coin[i]) begin
-					input_total = input_total + coin_value[i]; //bit 수 안 맞음
-				end
-			end
-
-			// Calculate total output coin value (for purchasing items)
-			for (i = 0; i < `kNumItems; i++) begin 
-				if (i_select_item[i] && ((current_total - output_total) >= item_price[i])) begin
-					output_total = output_total + item_price[i];
-				end
-			end	
-						// Calculate total return coin value
-			for (i = 0; i < `kNumCoins; i++) begin 
-				if (o_return_coin[i]) begin 
-					return_total = return_total + coin_value[i];
-				end
+		// Calculate total input coin value
+		for (i = 0; i < `kNumCoins; i++) begin
+			if (i_input_coin[i]) begin
+				input_total = input_total + coin_value[i]; //bit 수 안 맞음
 			end
 		end
 
+		// Calculate total output coin value (for purchasing items)
+		for (i = 0; i < `kNumItems; i++) begin 
+			if (i_select_item[i] && ((current_total - output_total) >= item_price[i])) begin
+				output_total = output_total + item_price[i];
+			end
+		end	
+
+		// Calculate total return coin value
+		for (i = 0; i < `kNumCoins; i++) begin 
+			if (o_return_coin[i]) begin 
+				return_total = return_total + coin_value[i];
+			end
+		end
+
+		if (return_total != 0) begin
+			$display("return_total: ", return_total);
+		end
 		// Calculate next current_total state
 		current_total_nxt = current_total + input_total - output_total - return_total;
 	end
@@ -66,15 +68,17 @@ current_total_nxt,wait_time,o_return_coin,o_available_item,o_output_item);
 		o_available_item = 4'b0000;
 		o_output_item = 4'b0000;
 
-		for (i = 0; i < `kNumItems; i++) begin
-			if (current_total >= item_price[i]) begin 
-				o_available_item[i] = 1;
+		if (wait_time > 0) begin
+			for (i = 0; i < `kNumItems; i++) begin
+				if (current_total >= item_price[i]) begin 
+					o_available_item[i] = 1;
+				end
 			end
-		end
 
-		for (i = 0; i < `kNumItems; i++) begin
-			if (i_select_item[i] && (current_total >= item_price[i])) begin //수정해야 함(current_total - 이미 나온 아이템 값 >= item_price[i]여야 함)
-				o_output_item[i] = 1;
+			for (i = 0; i < `kNumItems; i++) begin
+				if (i_select_item[i] && (current_total >= item_price[i])) begin //수정해야 함(current_total - 이미 나온 아이템 값 >= item_price[i]여야 함)
+					o_output_item[i] = 1;
+				end
 			end
 		end 
 	end
