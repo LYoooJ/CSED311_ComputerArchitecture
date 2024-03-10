@@ -1,3 +1,5 @@
+`include "alu_func.v"
+
 module alu #(parameter data_width = 16) (
 	input [data_width - 1 : 0] A, 
 	input [data_width - 1 : 0] B, 
@@ -7,7 +9,6 @@ module alu #(parameter data_width = 16) (
 // Do not use delay in your implementation.
 
 // You can declare any variables as needed.
-	//reg [data_width - 1 : 0] a;
 
 initial begin
 	C = 0;
@@ -19,96 +20,96 @@ end
 
 always@(*) begin
 		case(FuncCode)
-			4'b0000:
+			`FUNC_ADD:
 				begin 
 					C = A + B;
-					if((~(A[data_width-1] ^ B[data_width-1]) & ((C[data_width-1])^ A[data_width-1]))==0) begin
+					if((~(A[data_width-1] ^ B[data_width-1]) & ((C[data_width-1]) ^ A[data_width-1])) == 0) begin
 						//if overflow doesn't occur
 						OverflowFlag = 0;
 					end
-					else
-					begin
+					else begin
 						//if overflow occurs
 						OverflowFlag =1;
 					end
 				end
-			4'b0001:
+			`FUNC_SUB:
 				begin
 					C = A - B;
-					if(((A[data_width-1] ^ B[data_width-1]) & ((C[data_width-1])^ A[data_width-1]))==0) begin
+					if(((A[data_width-1] ^ B[data_width-1]) & ((C[data_width-1]) ^ A[data_width-1])) == 0) begin
+						//if overflow doesn't occur
 						OverflowFlag = 0;
 					end
-					else
-					begin
+					else begin
+						//if overflow occurs
 						OverflowFlag =1;
 					end
 				end
-			4'b0010:
+			`FUNC_ID:
 				begin
 					C = A;
 					OverflowFlag = 0;
 				end
-			4'b0011:
+			`FUNC_NOT:
 				begin
 					C = ~A;
 					OverflowFlag = 0;
 				end
-			4'b0100:
+			`FUNC_AND:
 				begin
 					C = A & B;
 					OverflowFlag = 0;
 				end
-			4'b0101:
+			`FUNC_OR:
 				begin
 					C = A | B;
 					OverflowFlag = 0;
 				end
-			4'b0110:
+			`FUNC_NAND:
 				begin
 					C = ~(A & B);
 					OverflowFlag = 0;
 				end
-			4'b0111:
+			`FUNC_NOR:
 				begin
-					C = ~(A|B);
+					C = ~(A | B);
 					OverflowFlag = 0;
 				end
-			4'b1000:
+			`FUNC_XOR:
 				begin
 					C = A ^ B;
 					OverflowFlag = 0;
 				end
-			4'b1001:
+			`FUNC_XNOR:
 				begin
-					C = ~(A^B);
+					C = ~(A ^ B);
 					OverflowFlag = 0;
 				end
-			4'b1010:
+			`FUNC_LLS:
 				begin
 					C = A << 1;
 					OverflowFlag = 0;
 				end
-			4'b1011:
+			`FUNC_LRS:
 				begin
 					C = A >> 1;
 					OverflowFlag = 0;
 				end
-			4'b1100:
+			`FUNC_ALS:
 				begin
-					C = A<<<1;
+					C = A <<< 1;
 					OverflowFlag = 0;
 				end
-			4'b1101:
+			`FUNC_ARS:
 				begin
 					C= $signed(A) >>> 1;
 					OverflowFlag = 0;
 				end
-			4'b1110:
+			`FUNC_TCP:
 				begin
 					C = ~A + 1;
 					OverflowFlag = 0;
 				end
-			4'b1111:
+			`FUNC_ZERO:
 				begin
 					C = 0;
 					OverflowFlag = 0;
