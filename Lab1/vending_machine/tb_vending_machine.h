@@ -93,7 +93,6 @@ void Wait_10cycle(Vvending_machine* dut, VerilatedVcdC* m_trace) {
         printf("FAILED : wait 10 cycle \n");
     }
 }
-
 void ReturnTest(int current, Vvending_machine* dut, VerilatedVcdC* m_trace) {
     test_num++;
     int total_current = current;
@@ -115,4 +114,3 @@ void ReturnTest(int current, Vvending_machine* dut, VerilatedVcdC* m_trace) {
         printf("FAILED : return %d \n", total_current);
     }
 }
-
