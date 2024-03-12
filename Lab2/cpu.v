@@ -13,7 +13,52 @@ module cpu(input reset,                     // positive reset signal
            output is_halted,                // Whehther to finish simulation
            output [31:0] print_reg [0:31]); // TO PRINT REGISTER VALUES IN TESTBENCH (YOU SHOULD NOT USE THIS)
   /***** Wire declarations *****/
+  //pc
+  wire [31:0] next_pc;
+  wire [31:0] current_pc;
 
+  //instruction module
+  wire[31:0] addr;
+  wire[31:0] dout;
+
+  //register file
+  wire[31:0] rs1_dout;
+  wire[31:0] rs2_dout;
+  //reg or wire
+  reg write_enable;
+  wire[31:0] writeData;
+
+  //data memory
+  wire[31:0] mem_addr; //data memory module Addr
+  wire[31:0] din; // Write data input
+  wire mem_read;
+  wire mem_write;
+  wire[31:0] mem_dout; //dout of Data memory
+
+  //ControlUnit
+  wire is_jal;
+  wire is_jalr; 
+  wire branch;
+  wire mem_read;
+  wire mem_to_reg;
+  wire mem_write;
+  wire alu_src;
+  wire write_enable;
+  //wire reg_write;
+  wire pc_to_reg;
+  wire is_ecall;
+  //wire pc_src_1;
+
+  //immediate_generator
+  wire[31:0]imm_gen_out;
+  
+  //alu
+  wire[31:0] alu_in_1;
+  wire[31:0] alu_in_2;
+  wire[3:0] alu_op;
+  wire[31:0] alu_result;
+  wire bcond;
+ 
   /***** Register declarations *****/
 
   // ---------- Update program counter ----------
