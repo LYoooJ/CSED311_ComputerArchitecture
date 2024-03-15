@@ -22,17 +22,21 @@ module cpu(input reset,                     // positive reset signal
   wire[31:0] dout;
 
   //register file
+  wire [4:0] rs1;
+  wire [4:0] rs2;
+  wire [4:0] rd;
+  wire [31:0] rd_din;
   wire[31:0] rs1_dout;
   wire[31:0] rs2_dout;
   //reg or wire
-  reg write_enable;
+  //reg write_enable;
   wire[31:0] writeData;
 
   //data memory
   wire[31:0] mem_addr; //data memory module Addr
   wire[31:0] din; // Write data input
-  wire mem_read;
-  wire mem_write;
+  //wire mem_read;
+  //wire mem_write;
   wire[31:0] mem_dout; //dout of Data memory
 
   //ControlUnit
@@ -63,80 +67,80 @@ module cpu(input reset,                     // positive reset signal
   // ---------- Update program counter ----------
   // PC must be updated on the rising edge (positive edge) of the clock.
   pc pc(
-    .reset(),       // input (Use reset to initialize PC. Initial value must be 0)
-    .clk(),         // input
-    .next_pc(),     // input
-    .current_pc()   // output
+    .reset(reset),       // input (Use reset to initialize PC. Initial value must be 0)
+    .clk(clk),         // input
+    .next_pc(next_pc),     // input
+    .current_pc(current_pc)   // output
   );
   
   // ---------- Instruction Memory ----------
   instruction_memory imem(
-    .reset(),   // input
-    .clk(),     // input
-    .addr(),    // input
-    .dout()     // output
+    .reset(reset),   // input
+    .clk(clk),     // input
+    .addr(addr),    // input
+    .dout(dout)     // output
   );
 
   // ---------- Register File ----------
   register_file reg_file (
-    .reset (),        // input
-    .clk (),          // input
-    .rs1 (),          // input
-    .rs2 (),          // input
-    .rd (),           // input
-    .rd_din (),       // input
-    .write_enable (), // input
-    .rs1_dout (),     // output
-    .rs2_dout (),     // output
+    .reset (reset),        // input
+    .clk (clk),          // input
+    .rs1 (rs1),          // input
+    .rs2 (rs2),          // input
+    .rd (rd),           // input
+    .rd_din (rd_din),       // input
+    .write_enable (write_enable), // input
+    .rs1_dout (rs1_dout),     // output
+    .rs2_dout (rs2_dout),     // output
     .print_reg (print_reg)  //DO NOT TOUCH THIS
   );
 
 
   // ---------- Control Unit ----------
   control_unit ctrl_unit (
-    .part_of_inst(),  // input
-    .is_jal(),        // output
-    .is_jalr(),       // output
-    .branch(),        // output
-    .mem_read(),      // output
-    .mem_to_reg(),    // output
-    .mem_write(),     // output
-    .alu_src(),       // output
-    .write_enable(),  // output
-    .pc_to_reg(),     // output
-    .is_ecall(),       // output (ecall inst)
-    .pc_src_1()
+    .part_of_inst(dout[6:0]),  // input
+    .is_jal(is_jal),        // output
+    .is_jalr(is_jalr),       // output
+    .branch(branch),        // output
+    .mem_read(mem_read),      // output
+    .mem_to_reg(mem_to_reg),    // output
+    .mem_write(mem_write),     // output
+    .alu_src(alu_src),       // output
+    .write_enable(write_enable),  // output
+    .pc_to_reg(pc_to_reg),     // output
+    .is_ecall(is_ecall),       // output (ecall inst)
+    .pc_src_1(pc_src_1)
   );
 
   // ---------- Immediate Generator ----------
   immediate_generator imm_gen(
-    .part_of_inst(),  // input
-    .imm_gen_out()    // output
+    .part_of_inst(dout),  // input
+    .imm_gen_out(imm_gen_out)    // output
   );
 
   // ---------- ALU Control Unit ----------
   alu_control_unit alu_ctrl_unit (
-    .part_of_inst(),  // input
-    .alu_op()         // output
+    .part_of_inst(dout),  // input
+    .alu_op(alu_op)         // output
   );
 
   // ---------- ALU ----------
   alu alu (
-    .alu_op(),      // input
-    .alu_in_1(),    // input  
-    .alu_in_2(),    // input
-    .alu_result(),  // output
-    .alu_bcond()    // output
+    .alu_op(alu_op),      // input
+    .alu_in_1(alu_in_1),    // input  
+    .alu_in_2(alu_in_2),    // input
+    .alu_result(alu_result),  // output
+    .alu_bcond(bcond)    // output
   );
 
   // ---------- Data Memory ----------
   data_memory dmem(
-    .reset (),      // input
-    .clk (),        // input
-    .addr (),       // input
-    .din (),        // input
-    .mem_read (),   // input
-    .mem_write (),  // input
-    .dout ()        // output
+    .reset (reset),      // input
+    .clk (clk),        // input
+    .addr (mem_addr),       // input
+    .din (din),        // input
+    .mem_read (mem_read),   // input
+    .mem_write (mem_write),  // input
+    .dout (mem_dout)        // output
   );
 endmodule
