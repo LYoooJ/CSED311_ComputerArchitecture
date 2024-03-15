@@ -2,7 +2,7 @@
 `include "alu_opcodes.v"
 
 //check the type of inst (4types): R, I, S ,SB 
-module alu_control_unit(part_of_inst(),alu_op());
+module alu_control_unit(part_of_inst, alu_op);
 
     input [31:0] part_of_inst; 
     output reg [3:0] alu_op; //4 bit alu control signal
