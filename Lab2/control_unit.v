@@ -36,4 +36,7 @@ module control_unit(input	reset,
       // DO NOT TOUCH COMMENT ABOVE
     end
   end
+
+  always @(*)
+  
 endmodule
