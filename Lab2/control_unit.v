@@ -1,23 +1,32 @@
 `include "opcodes.v"
 
 module control_unit(
-    input [6:0] part_of_inst(),  // input
-    output reg is_jal(),        // output
-    output reg is_jalr(),       // output
-    output reg branch(),        // output
-    output reg mem_read(),      // output
-    output reg mem_to_reg(),    // output
-    output reg mem_write(),     // output
-    output reg alu_src(),       // output
-    output reg write_enable(),  // output // regWrite
-    output reg pc_to_reg(),     // output
-    output reg is_ecall(), // output (ecall inst));
-    output reg pc_src_1()
+    input [6:0] part_of_inst,  // input
+    output reg is_jal,        // output
+    output reg is_jalr,       // output
+    output reg branch,        // output
+    output reg mem_read,      // output
+    output reg mem_to_reg,    // output
+    output reg mem_write,     // output
+    output reg alu_src,       // output
+    output reg write_enable,  // output // regWrite
+    output reg pc_to_reg,     // output
+    output reg is_ecall, // output (ecall inst));
+    output reg pc_src_1
     );     
 
     always@(*) begin
       //initialize
-      is_jal, is_jalr, branch, mem_read, mem_to_reg, mem_write, alu_src, write_enable, pc_to_reg, is_ecall =0;
+      is_jal = 0; 
+      is_jalr = 0; 
+      branch = 0;
+      mem_read = 0; 
+      mem_to_reg = 0;
+      mem_write = 0; 
+      alu_src = 0; 
+      write_enable = 0; 
+      pc_to_reg = 0; 
+      is_ecall =0;
       pc_src_1 =0;
       //opcode[6:0]에 따라서 control signal 부여
       case(part_of_inst)
@@ -34,7 +43,7 @@ module control_unit(
       end
       `JALR:begin
         is_jalr =1;
-        wirte_enable =1;
+        write_enable =1;
         pc_to_reg =1;
         alu_src =1;
       end
