@@ -1,9 +1,10 @@
-module alu (input [3:0] alu_op, 
-            input [31:0] alu_in_1,
-            input [31:0] alu_in_2,
-            output [31:0] alu_result,
-            output alu_bcond);
-        always(*) begin
+module alu (input [3:0] alu_op,
+        input [31:0] alu_in_1,
+        input [31:0] alu_in_2,
+        output reg [31:0] alu_result,
+        output reg alu_bcond);
+        
+        always @(*) begin
             alu_bcond =0;
             alu_result =0;
 
@@ -20,12 +21,12 @@ module alu (input [3:0] alu_op,
                     end
                 end
                 `BLT: begin
-                    if(rs1_dout<alu_in_2) begin 
+                    if(alu_in_1 < alu_in_2) begin 
                         alu_bcond =1; // rs1_dout < rs2_dout 이면 jump
                     end
                 end
                 `BGE: begin
-                    if(rs1_dout>=alu_in_2) begin
+                    if(alu_in_1 >= alu_in_2) begin
                         alu_bcond =1; 
                     end
                 end
