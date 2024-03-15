@@ -1,42 +1,52 @@
-module control_unit(input	reset,
-                     input clk,
-                     input [4:0] rs1,          // source register 1
-                     input [4:0] rs2,          // source register 2
-                     input [4:0] rd,           // destination register
-                     input [31:0] rd_din,      // input data for rd
-                     input write_enable,          // RegWrite signal
-                     output [31:0] rs1_dout,   // output of rs 1
-                     output [31:0] rs2_dout,   // output of rs 2
-                     output [31:0] print_reg [0:31]);
-  integer i;
-  // Register file
-  reg [31:0] rf[0:31];
-  // Do not touch or use print_reg
-  assign print_reg = rf;
+module control_unit(
+    input [6:0] part_of_inst(),  // input
+    output reg is_jal(),        // output
+    output reg is_jalr(),       // output
+    output reg branch(),        // output
+    output reg mem_read(),      // output
+    output reg mem_to_reg(),    // output
+    output reg mem_write(),     // output
+    output reg alu_src(),       // output
+    output reg write_enable(),  // output // regWrite
+    output reg pc_to_reg(),     // output
+    output reg is_ecall(), // output (ecall inst));
+    output reg pc_src_1()
+    );     
 
-  // TODO
-  // Asynchronously read register file
-  // Synchronously write data to the register file
+    always@(*) begin
+      //initialize
+      is_jal, is_jalr, branch, mem_read, mem_to_reg, mem_write, alu_src, write_enable, pc_to_reg, is_ecall =0;
+      pc_src_1 =0;
+      //opcode[6:0]에 따라서 control signal 부여
+      case(part_of_inst)
+      `ARITHMETIC: write_enable =1;
+      `ARITHMETIC_IMM: begin
+        write_enable =1;
+        alu_src =1;
+      end
+      `LOAD:begin
+        write_enable =1;
+        alu_src =1;
+        mem_to_reg =1;
+        mem_read =1;
+      end
+      `JALR:begin
+        is_jalr =1;
+        wirte_enable =1;
+        pc_to_reg =1;
+        alu_src =1;
+      end
+      `STORE: begin
+        mem_write =1;
+        alu_src =1;
+      end
+      `BRANCH:begin
+        //
+      end
+      default: begin end
+      endcase
 
-  // Initialize register file (do not touch)
-  always @(posedge clk) begin
-    // Reset register file
-    if (reset) begin
-      for (i = 0; i < 32; i = i + 1)
-        // DO NOT TOUCH COMMENT BELOW
-        /* verilator lint_off BLKSEQ */
-        rf[i] = 32'b0;
-        /* verilator lint_on BLKSEQ */
-        // DO NOT TOUCH COMMENT ABOVE
-
-      // DO NOT TOUCH COMMENT BELOW
-      /* verilator lint_off BLKSEQ */
-      rf[2] = 32'h2ffc; // stack pointer
-      /* verilator lint_on BLKSEQ */
-      // DO NOT TOUCH COMMENT ABOVE
     end
-  end
 
-  always @(*)
-  
+
 endmodule

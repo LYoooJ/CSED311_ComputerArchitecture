@@ -44,10 +44,9 @@ module cpu(input reset,                     // positive reset signal
   wire mem_write;
   wire alu_src;
   wire write_enable;
-  //wire reg_write;
   wire pc_to_reg;
   wire is_ecall;
-  //wire pc_src_1;
+  wire pc_src_1; // and, or gate 처리
 
   //immediate_generator
   wire[31:0]imm_gen_out;
@@ -105,7 +104,8 @@ module cpu(input reset,                     // positive reset signal
     .alu_src(),       // output
     .write_enable(),  // output
     .pc_to_reg(),     // output
-    .is_ecall()       // output (ecall inst)
+    .is_ecall(),       // output (ecall inst)
+    .pc_src_1()
   );
 
   // ---------- Immediate Generator ----------

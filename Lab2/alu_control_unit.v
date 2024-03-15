@@ -56,6 +56,4 @@ module alu_control_unit(part_of_inst(),alu_op());
         default begin end //alu_op = b'1111;
         endcase
     end
-
-
 endmodule
