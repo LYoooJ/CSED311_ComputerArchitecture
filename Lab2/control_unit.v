@@ -1,3 +1,5 @@
+`include "opcodes.v"
+
 module control_unit(
     input [6:0] part_of_inst(),  // input
     output reg is_jal(),        // output
