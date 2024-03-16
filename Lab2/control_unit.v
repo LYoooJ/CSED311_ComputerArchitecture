@@ -26,34 +26,41 @@ module control_unit(
       alu_src = 0; 
       write_enable = 0; 
       pc_to_reg = 0; 
-      is_ecall =0;
-      pc_src_1 =0;
+      is_ecall = 0;
+      pc_src_1 = 0;
       //opcode[6:0]에 따라서 control signal 부여
       case(part_of_inst)
-      `ARITHMETIC: write_enable =1;
+      `ARITHMETIC: begin 
+        write_enable = 1;
+      end  
       `ARITHMETIC_IMM: begin
-        write_enable =1;
-        alu_src =1;
+        write_enable = 1;
+        alu_src = 1;
       end
-      `LOAD:begin
-        write_enable =1;
-        alu_src =1;
-        mem_to_reg =1;
-        mem_read =1;
+      `LOAD: begin
+        write_enable = 1;
+        alu_src = 1;
+        mem_to_reg = 1;
+        mem_read = 1;
       end
-      `JALR:begin
-        is_jalr =1;
-        write_enable =1;
-        pc_to_reg =1;
-        alu_src =1;
+      `JALR: begin
+        is_jalr = 1;
+        write_enable = 1;
+        pc_to_reg = 1;
+        alu_src = 1;
       end
       `STORE: begin
-        mem_write =1;
-        alu_src =1;
+        mem_write = 1;
+        alu_src = 1;
       end
-      `BRANCH:begin
+      `BRANCH: begin
         //
+        branch = 1;
       end
+      `ECALL: begin
+        is_ecall = 1;
+      end
+      
       default: begin end
       endcase
 
