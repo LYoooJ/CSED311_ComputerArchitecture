@@ -61,6 +61,10 @@ module cpu(input reset,                     // positive reset signal
   wire[3:0] alu_op;
   wire[31:0] alu_result;
   wire bcond;
+
+  wire and_result;
+  wire [31:0] mux_out_pc;
+  wire [31:0] mux_out_write_data;
  
   /***** Register declarations *****/
 
@@ -90,6 +94,8 @@ module cpu(input reset,                     // positive reset signal
     .rd (dout[11:7]),           // input
     .rd_din (rd_din),       // input
     .write_enable (write_enable), // input
+    .is_ecall(is_ecall),
+    .is_halted(is_halted),
     .rs1_dout (rs1_dout),     // output
     .rs2_dout (rs2_dout),     // output
     .print_reg (print_reg)  //DO NOT TOUCH THIS
@@ -114,13 +120,15 @@ module cpu(input reset,                     // positive reset signal
 
   // ---------- Immediate Generator ----------
   immediate_generator imm_gen(
-    .part_of_inst(dout),  // input
+    .inst(dout),  // input
     .imm_gen_out(imm_gen_out)    // output
   );
 
   // ---------- ALU Control Unit ----------
   alu_control_unit alu_ctrl_unit (
-    .part_of_inst(dout),  // input
+    .opcode(dout[6:0]),  // input
+    .funct3(dout[14:12]),
+    .sign(dout[30]),
     .alu_op(alu_op)         // output
   );
 
@@ -152,17 +160,31 @@ module cpu(input reset,                     // positive reset signal
     .mux_out(alu_in_2)
   );
 
-  mux write_data_mux(
-    .input_1(mem_dout),
-    .input_2(alu_result),
+  mux write_data_mux_1(
+    .input_1(alu_result),
+    .input_2(mem_dout),
     .control(mem_to_reg),
+    .mux_out(mux_out_write_data) //Write data for register file
+  );
+
+  mux write_data_mux_2(
+    .input_1(mux_out_write_data),
+    .input_2(add_next_pc),
+    .control(pc_to_reg),
     .mux_out(rd_din) //Write data for register file
   );
 
-  mux next_pc_mux(
+  mux next_pc_mux_1(
     .input_1(add_next_pc),
     .input_2(branch_next_pc),
     .control(pc_src_1),
+    .mux_out(mux_out_pc)
+  );
+
+  mux next_pc_mux_2(
+    .input_1(mux_out_pc),
+    .input_2(alu_result),
+    .control(is_jalr),
     .mux_out(next_pc)
   );
 
@@ -176,6 +198,18 @@ module cpu(input reset,                     // positive reset signal
     .input_1(current_pc),
     .input_2(imm_gen_out),
     .sum(branch_next_pc)
+  );
+
+  and_gate and_gate(
+    .input_1(branch),
+    .input_2(bcond),
+    .out(and_result)
+  );
+
+  or_gate or_gate(
+    .input_1(is_jal),
+    .input_2(and_result),
+    .out(pc_src_1)
   );
 
 endmodule
