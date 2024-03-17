@@ -19,6 +19,7 @@ module data_memory #(parameter MEM_DEPTH = 16384) (input reset,
 
   // TODO
   // Asynchrnously read data from the memory
+  //assign dout = mem[];
   // Synchronously write data to the memory
   // (use dmem_addr to access memory)
 
@@ -36,10 +37,18 @@ module data_memory #(parameter MEM_DEPTH = 16384) (input reset,
   end
 
   // Asynchrnously read data from the memory
-  always @(mem_read) begin //??
+  always @(*) begin //??
     if (mem_read) begin
-      dout <= mem[dmem_addr];
-    end 
+      dout = mem[dmem_addr];
+    end
+    else begin
+      dout = 0;
+    end
+    // if (mem_read) begin
+    //   dout = mem[dmem_addr];
+      //$display("memx[0x0bfa]: 0x%x", mem[32'h0bfa]);
+      //$display("mem[0x%x(0x%x)]: 0x%x", addr, dmem_addr, dout);
+    //end 
   end
   
   // Synchronously write data to the memory
