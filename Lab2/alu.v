@@ -30,8 +30,6 @@ module alu (input [3:0] alu_op,
                         alu_bcond =1; 
                     end
                 end
-
-
                 `ADD: begin
                     alu_result = alu_in_1 + alu_in_2;
                 end
@@ -39,7 +37,7 @@ module alu (input [3:0] alu_op,
                     alu_result = alu_in_1 - alu_in_2;
                 end
                 `SLL: begin
-                    alu_result = alu_in_1 << 1;
+                    alu_result = alu_in_1 << alu_in_2;
                 end
                 `XOR: begin
                     alu_result = alu_in_1 ^ alu_in_2;
@@ -51,7 +49,7 @@ module alu (input [3:0] alu_op,
                     alu_result = alu_in_1 & alu_in_2;
                 end
                 `SRL: begin
-                    alu_result = alu_in_1 >> 1;
+                    alu_result = alu_in_1 >> alu_in_2;
                 end
                 default: begin
                     alu_result = 0;
