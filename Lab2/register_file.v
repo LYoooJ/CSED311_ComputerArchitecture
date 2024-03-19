@@ -32,7 +32,7 @@ module register_file(input	reset,
 
   // Synchronously write data to the register file
   always @(posedge clk) begin
-      if (write_enable) begin
+      if (write_enable && rd != 0) begin
         rf[rd] <= rd_din;
       end
   end
