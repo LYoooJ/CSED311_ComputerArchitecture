@@ -48,6 +48,11 @@ module control_unit(
         pc_to_reg = 1;
         alu_src = 1;
       end
+      `JAL: begin
+        is_jal = 1;
+        pc_to_reg = 1;
+        //write_enable = 1;
+      end
       `STORE: begin
         mem_write = 1;
         alu_src = 1;
