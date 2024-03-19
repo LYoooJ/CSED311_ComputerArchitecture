@@ -11,7 +11,6 @@ module register_file(input	reset,
                      output reg [31:0] rs2_dout,   // output of rs 2
                      output [31:0] print_reg [0:31]);
   
-  //output -> output reg
   integer i;
   // Register file
   reg [31:0] rf[0:31];
@@ -20,7 +19,23 @@ module register_file(input	reset,
 
   // TODO
   // Asynchronously read register file
+  always @(*) begin
+    rs1_dout = rf[rs1];
+    rs2_dout = rf[rs2];
+    if (is_ecall && rf[17] == 10) begin
+      is_halted = 1;
+    end
+    else begin
+      is_halted = 0;
+    end
+  end
+
   // Synchronously write data to the register file
+  always @(posedge clk) begin
+      if (write_enable) begin
+        rf[rd] <= rd_din;
+      end
+  end
 
   // Initialize register file (do not touch)
   always @(posedge clk) begin
@@ -39,24 +54,5 @@ module register_file(input	reset,
       /* verilator lint_on BLKSEQ */
       // DO NOT TOUCH COMMENT ABOVE
     end
-  end
-
-  // Asynchronously read register file
-  always @(*) begin
-    rs1_dout = rf[rs1];
-    rs2_dout = rf[rs2];
-    if (is_ecall && rf[17] == 10) begin
-      is_halted = 1;
-    end
-    else begin
-      is_halted = 0;
-    end
-  end
-
-  // Synchronously write data to the register file
-  always @(posedge clk) begin
-      if (write_enable) begin
-        rf[rd] <= rd_din;
-      end
   end
 endmodule

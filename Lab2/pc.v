@@ -11,5 +11,4 @@ always @(posedge clk) begin
         current_pc <= next_pc;
     end
 end
-// pcSrc?
 endmodule

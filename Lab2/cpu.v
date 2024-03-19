@@ -13,33 +13,20 @@ module cpu(input reset,                     // positive reset signal
            output is_halted,                // Whehther to finish simulation
            output [31:0] print_reg [0:31]); // TO PRINT REGISTER VALUES IN TESTBENCH (YOU SHOULD NOT USE THIS)
   /***** Wire declarations *****/
-  //pc
   wire [31:0] next_pc;
   wire [31:0] current_pc;
 
-  wire [31:0] branch_next_pc;
-  wire [31:0] add_next_pc;
+  wire [31:0] branch_target;
+  wire [31:0] incremented_pc;
 
-  //instruction module
-  //wire[31:0] addr;
-  wire[31:0] dout;
+  wire[31:0] inst;
 
-  //register file
   wire [31:0] rd_din;
-  wire[31:0] rs1_dout;
-  wire[31:0] rs2_dout;
-  //reg or wire
-  //reg write_enable;
-  //wire[31:0] writeData;
+  wire [31:0] rs1_dout;
+  wire [31:0] rs2_dout;
 
-  //data memory
-  //wire[31:0] mem_addr; //data memory module Addr
-  //wire[31:0] din; // Write data input
-  //wire mem_read;
-  //wire mem_write;
-  wire[31:0] mem_dout; //dout of Data memory
+  wire[31:0] mem_dout;
 
-  //ControlUnit
   wire is_jal;
   wire is_jalr; 
   wire branch;
@@ -50,166 +37,170 @@ module cpu(input reset,                     // positive reset signal
   wire write_enable;
   wire pc_to_reg;
   wire is_ecall;
-  wire pc_src_1; // and, or gate 처리
+  wire pc_src_1;
 
-  //immediate_generator
-  wire[31:0]imm_gen_out;
+  wire [31:0]imm_gen_out;
   
-  //alu
-  //wire[31:0] alu_in_1;
-  wire[31:0] alu_in_2;
-  wire[3:0] alu_op;
-  wire[31:0] alu_result;
+  wire [31:0] alu_in_2;
+  wire [3:0] alu_op;
+  wire [31:0] alu_result;
   wire bcond;
 
   wire and_result;
-  wire [31:0] mux_out_pc;
-  wire [31:0] mux_out_write_data;
+  wire [31:0] pc_src1_mux_out;
+  wire [31:0] mem_to_reg_mux_out;
  
   /***** Register declarations *****/
 
   // ---------- Update program counter ----------
   // PC must be updated on the rising edge (positive edge) of the clock.
   pc pc(
-    .reset(reset),       // input (Use reset to initialize PC. Initial value must be 0)
-    .clk(clk),         // input
-    .next_pc(next_pc),     // input
+    .reset(reset),            // input (Use reset to initialize PC. Initial value must be 0)
+    .clk(clk),                // input
+    .next_pc(next_pc),        // input
     .current_pc(current_pc)   // output
   );
   
   // ---------- Instruction Memory ----------
   instruction_memory imem(
-    .reset(reset),   // input
-    .clk(clk),     // input
-    .addr(current_pc),    // input
-    .dout(dout)     // output
+    .reset(reset),            // input
+    .clk(clk),                // input
+    .addr(current_pc),        // input
+    .dout(inst)               // output
   );
 
   // ---------- Register File ----------
   register_file reg_file (
-    .reset (reset),        // input
-    .clk (clk),          // input
-    .rs1 (dout[19:15]),          // input
-    .rs2 (dout[24:20]),          // input
-    .rd (dout[11:7]),           // input
-    .rd_din (rd_din),       // input
+    .reset (reset),               // input
+    .clk (clk),                   // input
+    .rs1 (inst[19:15]),           // input
+    .rs2 (inst[24:20]),           // input
+    .rd (inst[11:7]),             // input
+    .rd_din (rd_din),             // input
     .write_enable (write_enable), // input
-    .is_ecall(is_ecall),
-    .is_halted(is_halted),
-    .rs1_dout (rs1_dout),     // output
-    .rs2_dout (rs2_dout),     // output
+    .is_ecall(is_ecall),          // input
+    .is_halted(is_halted),        // output
+    .rs1_dout (rs1_dout),         // output
+    .rs2_dout (rs2_dout),         // output
     .print_reg (print_reg)  //DO NOT TOUCH THIS
   );
 
 
   // ---------- Control Unit ----------
   control_unit ctrl_unit (
-    .part_of_inst(dout[6:0]),  // input
-    .is_jal(is_jal),        // output
-    .is_jalr(is_jalr),       // output
-    .branch(branch),        // output
-    .mem_read(mem_read),      // output
-    .mem_to_reg(mem_to_reg),    // output
-    .mem_write(mem_write),     // output
-    .alu_src(alu_src),       // output
+    .part_of_inst(inst[6:0]),     // input
+    .is_jal(is_jal),              // output
+    .is_jalr(is_jalr),            // output
+    .branch(branch),              // output
+    .mem_read(mem_read),          // output
+    .mem_to_reg(mem_to_reg),      // output
+    .mem_write(mem_write),        // output
+    .alu_src(alu_src),            // output
     .write_enable(write_enable),  // output
-    .pc_to_reg(pc_to_reg),     // output
-    .is_ecall(is_ecall),       // output (ecall inst)
-    .pc_src_1(pc_src_1)
+    .pc_to_reg(pc_to_reg),        // output
+    .is_ecall(is_ecall)          // output (ecall inst)    
   );
 
   // ---------- Immediate Generator ----------
   immediate_generator imm_gen(
-    .inst(dout),  // input
-    .imm_gen_out(imm_gen_out)    // output
+    .part_of_inst(inst),          // input
+    .imm_gen_out(imm_gen_out)     // output
   );
 
   // ---------- ALU Control Unit ----------
   alu_control_unit alu_ctrl_unit (
-    .opcode(dout[6:0]),  // input
-    .funct3(dout[14:12]),
-    .sign(dout[30]),
+    .opcode(inst[6:0]),     // input
+    .funct3(inst[14:12]),   // input
+    .sign(inst[30]),        // input
     .alu_op(alu_op)         // output
   );
 
   // ---------- ALU ----------
   alu alu (
-    .alu_op(alu_op),      // input
-    .alu_in_1(rs1_dout),    // input  
-    .alu_in_2(alu_in_2),    // input
+    .alu_op(alu_op),          // input
+    .alu_in_1(rs1_dout),      // input  
+    .alu_in_2(alu_in_2),      // input
     .alu_result(alu_result),  // output
-    .alu_bcond(bcond)    // output
+    .alu_bcond(bcond)         // output
   );
 
   // ---------- Data Memory ----------
   data_memory dmem(
-    .reset (reset),      // input
-    .clk (clk),        // input
+    .reset (reset),           // input
+    .clk (clk),               // input
     .addr (alu_result),       // input
-    .din (rs2_dout),        // input
-    .mem_read (mem_read),   // input
-    .mem_write (mem_write),  // input
-    .dout (mem_dout)        // output
+    .din (rs2_dout),          // input
+    .mem_read (mem_read),     // input
+    .mem_write (mem_write),   // input
+    .dout (mem_dout)          // output
   );
 
-  // ---------- Mux ----------
-  mux alu_in_2_mux(
-    .input_1(rs2_dout),
-    .input_2(imm_gen_out),
-    .control(alu_src),
-    .mux_out(alu_in_2)
+  // ---------- ALUSrc Mux ----------
+  mux ALUSrc_mux(
+    .input_1(rs2_dout),       // input
+    .input_2(imm_gen_out),    // input
+    .control(alu_src),        // input
+    .mux_out(alu_in_2)        // output
   );
 
-  mux write_data_mux_1(
-    .input_1(alu_result),
-    .input_2(mem_dout),
-    .control(mem_to_reg),
-    .mux_out(mux_out_write_data) //Write data for register file
+ // ---------- MemToReg Mux ----------
+  mux MemToReg_mux(
+    .input_1(alu_result),         // input
+    .input_2(mem_dout),           // input
+    .control(mem_to_reg),         // input
+    .mux_out(mem_to_reg_mux_out)  // output
   );
 
-  mux write_data_mux_2(
-    .input_1(mux_out_write_data),
-    .input_2(add_next_pc),
-    .control(pc_to_reg),
-    .mux_out(rd_din) //Write data for register file
+ // ---------- PCToReg Mux ----------
+  mux PCtoReg_mux(
+    .input_1(mem_to_reg_mux_out),   // input
+    .input_2(incremented_pc),       // input
+    .control(pc_to_reg),            // input
+    .mux_out(rd_din)                // output
   );
 
-  mux next_pc_mux_1(
-    .input_1(add_next_pc),
-    .input_2(branch_next_pc),
-    .control(pc_src_1),
-    .mux_out(mux_out_pc)
+ // ---------- PCSrc1 Mux ----------
+  mux PCSrc1_mux(
+    .input_1(incremented_pc),       // input
+    .input_2(branch_target),        // input
+    .control(pc_src_1),             // input
+    .mux_out(pc_src1_mux_out)            // output
   );
 
-  mux next_pc_mux_2(
-    .input_1(mux_out_pc),
-    .input_2(alu_result),
-    .control(is_jalr),
-    .mux_out(next_pc)
+ // ---------- PCSrc2 Mux ----------
+  mux PCSrc2_mux(
+    .input_1(pc_src1_mux_out),           // input
+    .input_2(alu_result),           // input
+    .control(is_jalr),              // input
+    .mux_out(next_pc)               // output
   );
 
-  adder pc_adder(
-    .input_1(current_pc),
-    .input_2(4),
-    .sum(add_next_pc)
+ // ---------- PC increment Adder ----------
+  adder incremented_pc_adder(
+    .input_1(current_pc),           // input
+    .input_2(4),                    // input
+    .sum(incremented_pc)            // output
   );
 
-  adder branch_pc_adder (
-    .input_1(current_pc),
-    .input_2(imm_gen_out),
-    .sum(branch_next_pc)
+ // ---------- branch target Adder ----------
+  adder branch_target_adder (
+    .input_1(current_pc),           // input
+    .input_2(imm_gen_out),          // input
+    .sum(branch_target)             // output
   );
 
+ // ---------- AND Gate ----------
   and_gate and_gate(
-    .input_1(branch),
-    .input_2(bcond),
-    .out(and_result)
+    .input_1(branch),       // input
+    .input_2(bcond),        // input
+    .out(and_result)        // output
   );
 
+ // ---------- OR Gate ----------
   or_gate or_gate(
-    .input_1(is_jal),
-    .input_2(and_result),
-    .out(pc_src_1)
+    .input_1(is_jal),       // input
+    .input_2(and_result),   // input  
+    .out(pc_src_1)          // output
   );
 
 endmodule
