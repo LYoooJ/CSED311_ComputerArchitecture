@@ -57,6 +57,7 @@ module cpu(input reset,       // positive reset signal
   wire and_result;
   wire or_result;
 
+  /*****mux wire *****/
   wire IorD_out;
   wire MemtoReg_out;
   wire ALU_src_A_out;
@@ -187,6 +188,18 @@ module cpu(input reset,       // positive reset signal
     .input_2(ALUOut),    // input
     .control(PCSource),        // input
     .mux_out(pcsource_out)        // output
+  );
+
+  and_gate and(
+    .input_1(bcond),
+    .input_2(PCWriteNotCond),
+    .out(and_out)
+  );
+
+  or_gate or(
+    .input_1(and_result),
+    .input_2(PCWrite),
+    .out(or_out)
   );
 
 endmodule
