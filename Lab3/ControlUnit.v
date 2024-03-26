@@ -1,13 +1,15 @@
 module ControlUnit (input part_of_inst,
-                    output reg is_jal,
-                    output reg is_jalr,
-                    output reg branch,
-                    output reg mem_read,
-                    output reg mem_to_reg,
-                    output reg mem_write,
-                    output reg alu_src,
-                    output reg write_enable,
-                    output reg pc_to_reg,
-                    output reg is_ecall);
+                    output reg PCWriteNotCond,
+                    output reg PCWrite,
+                    output reg IorD,
+                    output reg MemRead,
+                    output reg MemWrite,
+                    output reg MemtoReg,
+                    output reg IRWrite,
+                    output reg PCSource,
+                    output reg ALUOp,
+                    output reg ALUSrcB,
+                    output reg ALUSrcA,
+                    output reg RegWrite);
   
 endmodule
