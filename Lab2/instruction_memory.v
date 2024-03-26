@@ -1,7 +1,7 @@
 module instruction_memory #(parameter MEM_DEPTH = 1024) (input reset,
                                                          input clk,
                                                          input [31:0] addr,   // address of the instruction memory
-                                                         output reg [31:0] dout); // instruction at addr
+                                                         output [31:0] dout); // instruction at addr
   integer i;
   // Instruction memory
   reg [31:0] mem[0:MEM_DEPTH - 1];
@@ -17,6 +17,7 @@ module instruction_memory #(parameter MEM_DEPTH = 1024) (input reset,
   // TODO
   // Asynchronously read instruction from the memory 
   // (use imem_addr to access memory)
+  assign dout = mem[imem_addr];
 
   // Initialize instruction memory (do not touch except path)
   always @(posedge clk) begin
@@ -29,15 +30,11 @@ module instruction_memory #(parameter MEM_DEPTH = 1024) (input reset,
         // DO NOT TOUCH COMMENT ABOVE
 
       // Provide path of the file including instructions with binary format
+<<<<<<< HEAD
       $readmemh("student_tb/non-controlflow_mem.txt", mem);
+=======
+      $readmemh("student_tb/loop_mem.txt", mem);
+>>>>>>> 1c5ae6a1e1fc0d392c74decb6b816fe121760384
     end
   end
-
-  // Asynchronously read instruction from the memory 
-  // (use imem_addr to access memory)
-  always @(*) begin
-    dout = mem[imem_addr];
-  end
 endmodule
-
-

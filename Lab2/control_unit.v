@@ -11,8 +11,7 @@ module control_unit(
     output reg alu_src,       // output
     output reg write_enable,  // output // regWrite
     output reg pc_to_reg,     // output
-    output reg is_ecall, // output (ecall inst));
-    output reg pc_src_1
+    output reg is_ecall      // output
     );     
 
     always@(*) begin
@@ -27,7 +26,7 @@ module control_unit(
       write_enable = 0; 
       pc_to_reg = 0; 
       is_ecall = 0;
-      pc_src_1 = 0;
+
       //opcode[6:0]에 따라서 control signal 부여
       case(part_of_inst)
       `ARITHMETIC: begin 
@@ -49,22 +48,23 @@ module control_unit(
         pc_to_reg = 1;
         alu_src = 1;
       end
+      `JAL: begin
+        is_jal = 1;
+        pc_to_reg = 1;
+        write_enable = 1;
+      end
       `STORE: begin
         mem_write = 1;
         alu_src = 1;
       end
       `BRANCH: begin
-        //
         branch = 1;
       end
       `ECALL: begin
         is_ecall = 1;
       end
-      
-      default: begin end
+      default: begin
+      end
       endcase
-
     end
-
-
 endmodule
