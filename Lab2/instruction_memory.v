@@ -30,11 +30,7 @@ module instruction_memory #(parameter MEM_DEPTH = 1024) (input reset,
         // DO NOT TOUCH COMMENT ABOVE
 
       // Provide path of the file including instructions with binary format
-<<<<<<< HEAD
-      $readmemh("student_tb/non-controlflow_mem.txt", mem);
-=======
       $readmemh("student_tb/loop_mem.txt", mem);
->>>>>>> 1c5ae6a1e1fc0d392c74decb6b816fe121760384
     end
   end
 endmodule
