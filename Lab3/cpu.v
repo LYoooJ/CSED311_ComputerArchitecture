@@ -193,13 +193,13 @@ module cpu(input reset,       // positive reset signal
   and_gate and(
     .input_1(bcond),
     .input_2(PCWriteNotCond),
-    .and_out(and_out)
+    .out(and_out)
   );
 
   or_gate or(
     .input_1(and_result),
     .input_2(PCWrite),
-    .or_out(or_out)
+    .out(or_out)
   );
-  
+
 endmodule
