@@ -189,6 +189,6 @@ module cpu(input reset,       // positive reset signal
     .input_2(),    // input
     .control(),        // input
     .mux_out()        // output
-  )
+  );
 
 endmodule
