@@ -1,4 +1,4 @@
-module 4x1_mux (input [31:0] input_1, 
+module mux_4x1 (input [31:0] input_1, 
             input [31:0] input_2,
             input [31:0] input_3,
             input [31:0] input_4,

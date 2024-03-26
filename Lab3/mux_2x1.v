@@ -1,4 +1,4 @@
-module 2x1_mux (input [31:0] input_1, 
+module mux_2x1 (input [31:0] input_1, 
             input [31:0] input_2, 
             input control, 
             output reg [31:0] mux_out);
