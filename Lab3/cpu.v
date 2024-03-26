@@ -35,9 +35,6 @@ module cpu(input reset,       // positive reset signal
   wire [31:0] current_pc;
 
   /*****MemData wire *****/
-  
-  /*****Instruction *****/
-  wire [31:0] inst;
 
   /*****register wire *****/
   wire [31:0] rd_din;
@@ -51,11 +48,16 @@ module cpu(input reset,       // positive reset signal
   wire [31:0] alu_in_2;
   wire bcond;
   wire [3:0] alu_op;
-
   wire [31:0] alu_result;
 
   wire and_result;
   wire or_result;
+
+  wire IorD_out;
+  wire MemtoReg_out;
+  wire ALU_src_A_out;
+  wire ALU_src_B_out;
+  wire PC_source_out;
   
   //
   /***** Register declarations *****/
@@ -132,53 +134,53 @@ module cpu(input reset,       // positive reset signal
 
   // ---------- ALU ----------
   ALU alu(
-    .alu_op(),      // input
-    .alu_in_1(),    // input  
-    .alu_in_2(),    // input
+    .alu_op(pc),      // input
+    .alu_in_1(ALU_src_A_out),    // input  
+    .alu_in_2(ALU_src_B_out),    // input
     .alu_result(alu_result),  // output
-    .alu_bcond()     // output
+    .alu_bcond(bcond)     // output
   );
 
  // ---------- IorD ----------
-  2x1_mux IorD_mux(
-    .input_1(),       // input
-    .input_2(),    // input
-    .control(),        // input
-    .mux_out()        // output
+  mux_2x1 IorD_mux(
+    .input_1(next_pc),       // input
+    .input_2(B),    // input
+    .control(IorD),        // input
+    .mux_out(IorD_out)        // output
   );
 
  // ---------- MemToReg Mux ----------
-  2x1_mux MemToReg_mux(
-    .input_1(),       // input
-    .input_2(),    // input
-    .control(),        // input
-    .mux_out()        // output
+  mux_2x1 MemToReg_mux(
+    .input_1(ALUOut),       // input
+    .input_2(MDR),    // input
+    .control(IorD),        // input
+    .mux_out(MemtoReg_out)      // output
   );
 
  // ----------ALU_src_A_mux ----------
-  2x1_mux ALU_src_A_mux(
-    .input_1(),       // input
-    .input_2(),    // input
-    .control(),        // input
-    .mux_out()        // output
+  mux_2x1 ALU_src_A_mux(
+    .input_1(current_pc),       // input
+    .input_2(A),    // input
+    .control(ALUSrcA),        // input
+    .mux_out(ALU_src_A_out)        // output
   );
 
  // ---------- ALU_src_B_mux ----------
-  4x1_mux ALU_src_B_mux(
-    .input_1(),       // input
-    .input_2(),    // input
-    .input_3(),
-    .input_4(),
-    .control(),        // input
-    .mux_out()        // output
+  mux_4x1 ALU_src_B_mux(
+    .input_1(B),       // input
+    .input_2(4),    // input
+    .input_3(imm_gen_out),
+    .input_4(0),
+    .control(ALUSrcB),        // input
+    .mux_out(ALU_src_B_out)        // output
   );
 
  // ---------- PC_source_mux ----------
-  2x1_mux PC_source_mux(
-    .input_1(),       // input
-    .input_2(),    // input
-    .control(),        // input
-    .mux_out()        // output
+  mux_2x1 PC_source_mux(
+    .input_1(bcond),       // input
+    .input_2(ALUOut),    // input
+    .control(PCSource),        // input
+    .mux_out(pcsource_out)        // output
   );
 
 endmodule
