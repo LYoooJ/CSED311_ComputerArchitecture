@@ -35,6 +35,10 @@ module cpu(input reset,       // positive reset signal
   wire [31:0] current_pc;
 
   /*****MemData wire *****/
+  wire [31:0] MemData;
+
+  /*****Instruction *****/
+  wire [31:0] inst;
 
   /*****register wire *****/
   wire [31:0] rd_din;
@@ -69,6 +73,8 @@ module cpu(input reset,       // positive reset signal
   reg [31:0] ALUOut; // ALU output register
   // Do not modify and use registers declared above.
 
+  assign IR = MemData;
+  assign MDR = MemData;
   // ---------- Update program counter ----------
   // PC must be updated on the rising edge (positive edge) of the clock.
   PC pc(
@@ -85,22 +91,22 @@ module cpu(input reset,       // positive reset signal
     .rs1(IR[19:15]),          // input
     .rs2(IR[24:20]),          // input
     .rd(IR[11:7]),           // input
-    .rd_din(),       // input
-    .write_enable(),  // input
-    .rs1_dout(),     // output
-    .rs2_dout(),      // output
-    .print_reg()     // output (TO PRINT REGISTER VALUES IN TESTBENCH)
+    .rd_din(MemtoReg_out),       // input
+    .write_enable(RegWrite),  // input
+    .rs1_dout(A),     // output
+    .rs2_dout(B),      // output
+    .print_reg(print_reg)     // output (TO PRINT REGISTER VALUES IN TESTBENCH)
   );
 
   // ---------- Memory ----------
   Memory memory(
     .reset(reset),      // input
     .clk(clk),          // input
-    .addr(),            // input
-    .din(),             // input
+    .addr(IorD_out),            // input
+    .din(B),             // input
     .mem_read(MemRead),     // input
     .mem_write(MemWrite),    // input
-    .dout()          // output
+    .dout(MemData)          // output
   );
 
   // ---------- Control Unit ----------
