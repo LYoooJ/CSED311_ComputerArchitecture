@@ -8,7 +8,7 @@ module ControlUnit (input part_of_inst,
                     output reg IRWrite,
                     output reg PCSource,
                     output reg ALUOp,
-                    output reg ALUSrcB,
+                    output reg [1:0] ALUSrcB,
                     output reg ALUSrcA,
                     output reg RegWrite);
   

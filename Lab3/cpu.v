@@ -26,13 +26,14 @@ module cpu(input reset,       // positive reset signal
   wire IRWrite;
   wire PCSource;
   wire ALUOp;
-  wire ALUSrcB;
+  wire [1:0] ALUSrcB;
   wire ALUSrcA;
   wire RegWrite;
 
   wire [31:0]imm_gen_out;
 
   wire [3:0] alu_op;
+
   wire [31:0] alu_result;
 
   /***** Register declarations *****/
@@ -68,12 +69,12 @@ module cpu(input reset,       // positive reset signal
 
   // ---------- Memory ----------
   Memory memory(
-    .reset(),        // input
-    .clk(),          // input
-    .addr(),         // input
-    .din(),          // input
-    .mem_read(),     // input
-    .mem_write(),    // input
+    .reset(reset),      // input
+    .clk(clk),          // input
+    .addr(),            // input
+    .din(),             // input
+    .mem_read(MemRead),     // input
+    .mem_write(MemWrite),    // input
     .dout()          // output
   );
 
@@ -103,7 +104,8 @@ module cpu(input reset,       // positive reset signal
   // ---------- ALU Control Unit ----------
   ALUControlUnit alu_ctrl_unit(
     .part_of_inst({IR[30], IR[14:12]}),  // input
-    .alu_op()         // output
+    .alu_op(),                           // input
+    .alu_control_lines()                 // output
   );
 
   // ---------- ALU ----------
