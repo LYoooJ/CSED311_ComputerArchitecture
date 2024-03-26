@@ -40,7 +40,7 @@ module cpu(input reset,       // positive reset signal
     .rs2(),          // input
     .rd(),           // input
     .rd_din(),       // input
-    .write_enable(),    // input
+    .write_enable(),  // input
     .rs1_dout(),     // output
     .rs2_dout(),      // output
     .print_reg()     // output (TO PRINT REGISTER VALUES IN TESTBENCH)
@@ -92,5 +92,47 @@ module cpu(input reset,       // positive reset signal
     .alu_result(),  // output
     .alu_bcond()     // output
   );
+
+ // ---------- IorD ----------
+  2x1_mux IorD_mux(
+    .input_1(),       // input
+    .input_2(),    // input
+    .control(),        // input
+    .mux_out()        // output
+  );
+
+ // ---------- MemToReg Mux ----------
+  2x1_mux MemToReg_mux(
+    .input_1(),       // input
+    .input_2(),    // input
+    .control(),        // input
+    .mux_out()        // output
+  );
+
+ // ----------ALU_src_A_mux ----------
+  2x1_mux ALU_src_A_mux(
+    .input_1(),       // input
+    .input_2(),    // input
+    .control(),        // input
+    .mux_out()        // output
+  );
+
+ // ---------- ALU_src_B_mux ----------
+  4x1_mux ALU_src_B_mux(
+    .input_1(),       // input
+    .input_2(),    // input
+    .input_3(),
+    .input_4(),
+    .control(),        // input
+    .mux_out()        // output
+  );
+
+ // ---------- PC_source_mux ----------
+  2x1_mux PC_source_mux(
+    .input_1(),       // input
+    .input_2(),    // input
+    .control(),        // input
+    .mux_out()        // output
+  )
 
 endmodule
