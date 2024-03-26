@@ -26,7 +26,7 @@ module cpu(input reset,       // positive reset signal
   wire IRWrite;
   wire PCSource;
   wire ALUOp;
-  wire ALUSrcB;
+  wire [1:0] ALUSrcB;
   wire ALUSrcA;
   wire RegWrite;
 
@@ -51,11 +51,12 @@ module cpu(input reset,       // positive reset signal
   wire [31:0] alu_in_2;
   wire bcond;
   wire [3:0] alu_op;
+
   wire [31:0] alu_result;
 
   wire and_result;
   wire or_result;
-
+  
   //
   /***** Register declarations *****/
   reg [31:0] IR; // instruction register
@@ -68,19 +69,19 @@ module cpu(input reset,       // positive reset signal
   // ---------- Update program counter ----------
   // PC must be updated on the rising edge (positive edge) of the clock.
   PC pc(
-    .reset(),       // input (Use reset to initialize PC. Initial value must be 0)
-    .clk(),         // input
-    .next_pc(),     // input
-    .current_pc()   // output
+    .reset(reset),       // input (Use reset to initialize PC. Initial value must be 0)
+    .clk(clk),         // input
+    .next_pc(next_pc),     // input
+    .current_pc(current_pc)   // output
   );
 
   // ---------- Register File ----------
   RegisterFile reg_file(
-    .reset(),        // input
-    .clk(),          // input
-    .rs1(),          // input
-    .rs2(),          // input
-    .rd(),           // input
+    .reset(reset),        // input
+    .clk(clk),          // input
+    .rs1(IR[19:15]),          // input
+    .rs2(IR[24:20]),          // input
+    .rd(IR[11:7]),           // input
     .rd_din(),       // input
     .write_enable(),  // input
     .rs1_dout(),     // output
@@ -90,12 +91,12 @@ module cpu(input reset,       // positive reset signal
 
   // ---------- Memory ----------
   Memory memory(
-    .reset(),        // input
-    .clk(),          // input
-    .addr(),         // input
-    .din(),          // input
-    .mem_read(),     // input
-    .mem_write(),    // input
+    .reset(reset),      // input
+    .clk(clk),          // input
+    .addr(),            // input
+    .din(),             // input
+    .mem_read(MemRead),     // input
+    .mem_write(MemWrite),    // input
     .dout()          // output
   );
 
@@ -103,7 +104,19 @@ module cpu(input reset,       // positive reset signal
   ControlUnit ctrl_unit(
     .part_of_inst(),  // input
     .is_jal(),        // output
-    .is_jalr(),       // output
+    .part_of_inst(IR[6:0]),  // input
+    .PCWriteNotCond(PCWriteNotCond),
+    .PCWrite(PCWrite),
+    .IorD(IorD),
+    .MemRead(MemRead),
+    .MemWrite(MemWrite),
+    .MemtoReg(MemtoReg),
+    .IRWrite(IRWrite),
+    .PCSource(PCSource),
+    .ALUOp(ALUOp),
+    .ALUSrcB(ALUSrcB),
+    .ALUSrcA(ALUSrcA),
+    .RegWrite(RegWrite)
     .branch(),        // output
     .mem_read(),      // output
     .mem_to_reg(),    // output
@@ -116,14 +129,15 @@ module cpu(input reset,       // positive reset signal
 
   // ---------- Immediate Generator ----------
   ImmediateGenerator imm_gen(
-    .part_of_inst(),  // input
-    .imm_gen_out()    // output
+    .part_of_inst(IR[31:0]),  // input
+    .imm_gen_out(imm_gen_out)    // output
   );
 
   // ---------- ALU Control Unit ----------
   ALUControlUnit alu_ctrl_unit(
-    .part_of_inst(),  // input
-    .alu_op()         // output
+    .part_of_inst({IR[30], IR[14:12]}),  // input
+    .alu_op(),                           // input
+    .alu_control_lines()                 // output
   );
 
   // ---------- ALU ----------
@@ -131,7 +145,7 @@ module cpu(input reset,       // positive reset signal
     .alu_op(),      // input
     .alu_in_1(),    // input  
     .alu_in_2(),    // input
-    .alu_result(),  // output
+    .alu_result(alu_result),  // output
     .alu_bcond()     // output
   );
 
@@ -147,7 +161,7 @@ module cpu(input reset,       // positive reset signal
   2x1_mux MemToReg_mux(
     .input_1(),       // input
     .input_2(),    // input
-    .control(mem_to_reg),        // input
+    .control(),        // input
     .mux_out()        // output
   );
 
