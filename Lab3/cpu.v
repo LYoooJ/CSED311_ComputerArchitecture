@@ -54,8 +54,8 @@ module cpu(input reset,       // positive reset signal
   wire [3:0] alu_control_lines;
   wire [31:0] alu_result;
 
-  wire and_result;
-  wire or_result;
+  wire and_out;
+  wire PCUpdate;
 
   /*****mux wire *****/
   wire IorD_out;
@@ -79,7 +79,7 @@ module cpu(input reset,       // positive reset signal
   // PC must be updated on the rising edge (positive edge) of the clock.
   PC pc(
     .reset(reset),       // input (Use reset to initialize PC. Initial value must be 0)
-    .clk(clk),         // input
+    .PCUpdate(PCUpdate),
     .next_pc(next_pc),     // input
     .current_pc(current_pc)   // output
   );
@@ -199,7 +199,7 @@ module cpu(input reset,       // positive reset signal
   or_gate or(
     .input_1(and_result),
     .input_2(PCWrite),
-    .out(or_out)
+    .out(PCUpdate)
   );
 
 endmodule
