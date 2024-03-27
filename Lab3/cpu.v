@@ -78,6 +78,7 @@ module cpu(input reset,       // positive reset signal
   // assign IR = MemData;
   // assign MDR = MemData;
   // assign ALUOut = alu_result;
+  reg branch_taken;
 
   // ---------- Update program counter ----------
   // PC must be updated on the rising edge (positive edge) of the clock.
@@ -117,7 +118,7 @@ module cpu(input reset,       // positive reset signal
   // ---------- Control Unit ----------
   ControlUnit ctrl_unit(
     .part_of_inst(IR[6:0]),           // input
-    .bcond(bcond),
+    .bcond(branch_taken),
     .clk(clk),
     .PCWriteNotCond(PCWriteNotCond),  // output
     .PCWrite(PCWrite),                // output
@@ -211,6 +212,7 @@ module cpu(input reset,       // positive reset signal
 
 always @(posedge clk) begin
   ALUOut <= alu_result;
+  branch_taken <= bcond;
   if (MemRead) begin
     if (IorD) begin
       MDR <= MemData;
