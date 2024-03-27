@@ -33,6 +33,7 @@ module ALUControlUnit (input [31:0] part_of_inst,
         else begin end
     end
     endmodule
+    
 /***
 opcode받아서 한다면
         case(opcode)
