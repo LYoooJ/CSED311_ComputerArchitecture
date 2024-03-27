@@ -12,11 +12,13 @@ module cpu(input reset,       // positive reset signal
            input clk,         // clock signal
            output is_halted,
            output [31:0]print_reg[0:31]
-           ); // Whehther to finish simulation
+           ); // Whether to finish simulation
+
   /***** Wire declarations *****/
   wire [31:0] next_pc;
   wire [31:0] current_pc;
 
+  //control unit
   wire PCWriteNotCond;
   wire PCWrite;
   wire IorD;
@@ -38,7 +40,7 @@ module cpu(input reset,       // positive reset signal
   wire [31:0] MemData;
 
   /*****Instruction *****/
-  wire [31:0] inst;
+  //wire [31:0] inst;
 
   /*****register wire *****/
   wire [31:0] rd_din;
@@ -49,9 +51,11 @@ module cpu(input reset,       // positive reset signal
   wire [31:0]imm_gen_out;
 
   /***** ALU *****/
+  wire [31:0] alu_in_1;
   wire [31:0] alu_in_2;
-  wire bcond;
-  wire [3:0] alu_control_lines;
+  wire [1:0] alu_op; //이거 해줘야 하나
+  wire bcond; //output
+  wire [3:0] alu_control_lines; //control
   wire [31:0] alu_result;
 
   wire and_result;
@@ -75,6 +79,7 @@ module cpu(input reset,       // positive reset signal
 
   assign IR = MemData;
   assign MDR = MemData;
+  assign ALUOut = alu_result;
   // ---------- Update program counter ----------
   // PC must be updated on the rising edge (positive edge) of the clock.
   PC pc(
