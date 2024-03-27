@@ -134,7 +134,7 @@ module cpu(input reset,       // positive reset signal
 
   // ---------- ALU Control Unit ----------
   ALUControlUnit alu_ctrl_unit(
-    .part_of_inst({IR[30], IR[14:12]}),                   // input
+    .part_of_inst(IR[31:0]),                   // input
     .alu_op(ALUOp),                                            // input
     .alu_control_lines(alu_control_lines)                 // output
   );
