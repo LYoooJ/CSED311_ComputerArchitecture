@@ -1,7 +1,14 @@
 `include "state_def.v"
 
+`define pc 1'b0
+`define A 1'b1
+`define B 2'b00
+`define four 2'b01
+`define imm 2'b10
+
 module micro_controller (input [3:0] current_state,
                          input [6:0] opcode,
+                         input branch_taken,
                          output reg PCWriteNotCond,
                          output reg PCWrite,
                          output reg IorD,
@@ -15,7 +22,6 @@ module micro_controller (input [3:0] current_state,
                          output reg ALUSrcA,
                          output reg RegWrite);
 
-
 always @(*) begin
     PCWriteNotCond = 0;
     PCWrite = 0;
@@ -26,76 +32,153 @@ always @(*) begin
     IRWrite = 0;
     PCSource = 0;
     ALUOp = 2'b00;
-    ALUSrcB = 2'b00;
-    ALUSrcA = 0;
+    ALUSrcB = `B;
+    ALUSrcA = `pc;
     RegWrite = 0;
+
     case(current_state)
+        //IF: Memory로부터 instruction을 읽고, IR register에 저장
         `IF_1: begin
-            ALUSrcA = 1;
             MemRead = 1;
             IRWrite = 1;
-            ALUSrcB = 2'b01;
-            PCWrite = 1;
+            IorD = 0;
         end
         `IF_2: begin
-            ALUSrcA = 1;
             MemRead = 1;
             IRWrite = 1;
-            ALUSrcB = 2'b01;
-            PCWrite = 1;            
+            IorD = 0;   
         end
         `IF_3: begin
-            ALUSrcA = 1;
             MemRead = 1;
             IRWrite = 1;
-            ALUSrcB = 2'b01;
-            PCWrite = 1;  
+            IorD = 0;
         end
         `IF_4: begin
-            ALUSrcA = 1;
             MemRead = 1;
             IRWrite = 1;
-            ALUSrcB = 2'b01;
-            PCWrite = 1;  
+            IorD = 0;
         end
+        // instruction decode, read register values
         `ID: begin
-            ALUSrcB = 2'b10;
+            ALUSrcA = `pc;
+            ALUSrcB = `four;
+            ALUOp = 2'b00; //ADD
         end
         `EX_1: begin
             if (opcode == `ARITHMETIC) begin
-                ALUSrcA = 1;
+                ALUSrcA = `A;
+                ALUSrcB = `B;
                 ALUOp = 2'b10;
-                ALUSrcB = 2'b00;
             end
             else if (opcode == `ARITHMETIC_IMM) begin
-                ALUSrcA = 1;
+                ALUSrcA = `A;
+                ALUSrcB = `imm;
                 ALUOp = 2'b10;
-                ALUSrcB = 2'b10;
             end
             else if (opcode == `LOAD || opcode == `STORE) begin
-                ALUSrcA = 1;
-                ALUOp = 2'b00;
-                ALUSrcB = 2'b10;
+                ALUSrcA = `A;
+                ALUSrcB = `imm;
+                ALUOp = 2'b10;
             end
             else if (opcode == `BRANCH) begin
-                ALUSrcA = 1;
-                ALUSrcB = 2'b00;
+                ALUSrcA = `A;
+                ALUSrcB =`B;
                 ALUOp = 2'b01;
                 PCWriteNotCond = 1;
                 PCSource = 1;
             end
+            else if (opcode == `JALR) begin
+                ALUSrcA = `A;
+                ALUSrcB = `imm;
+                ALUOp = 2'b10;    
+            end
+            else begin //JAL
+                ALUSrcA = `pc;
+                ALUSrcB = `imm;
+                ALUOp = 2'b10;                
+            end
         end
         `EX_2: begin
+            if (opcode == `BRANCH) begin
+                if (!branch_taken) begin
+                    ALUSrcA = `pc;
+                    ALUSrcB = `imm;
+                    ALUOp = 2'b00;
+                    PCSource = 0;
+                    PCWrite = 1;
+                end
+            end
         end
         `MEM_1: begin
+            if (opcode == `LOAD) begin
+                MemRead = 1;
+                IorD = 1;
+            end
+            else begin //STORE
+                MemWrite = 1;
+                IorD = 1;
+            end
         end
         `MEM_2: begin
+            if (opcode == `LOAD) begin
+                MemRead = 1;
+                IorD = 1;
+            end
+            else begin //STORE
+                MemWrite = 1;
+                IorD = 1;
+            end
         end
         `MEM_3: begin
+            if (opcode == `LOAD) begin
+                MemRead = 1;
+                IorD = 1;
+            end
+            else begin //STORE
+                MemWrite = 1;
+                IorD = 1;
+            end
         end
         `MEM_4: begin
+            if (opcode == `LOAD) begin
+                MemRead = 1;
+                IorD = 1;
+            end
+            else begin //STORE
+                MemWrite = 1;
+                IorD = 1;
+            end
         end
         `WB: begin
+            if (opcode == `ARITHMETIC || opcode == `ARITHMETIC_IMM) begin
+                PCWrite = 1;
+                MemtoReg = 0; //ALUOut
+                RegWrite = 1;
+                ALUSrcA = `pc;
+                ALUSrcB = `four;
+                ALUOp = 2'b10;
+                PCSource = 0;
+            end
+            if (opcode == `LOAD) begin
+                PCWrite = 1;
+                MemtoReg = 1; 
+                RegWrite = 1;
+                ALUSrcA = `pc;
+                ALUSrcB = `four;
+                ALUOp = 2'b10;
+                PCSource = 0;
+            end
+            if (opcode == `JAL || opcode == `JALR) begin
+                PCWrite = 1;
+                MemtoReg = 0; //ALUOut
+                RegWrite = 1;
+                ALUSrcA = `pc;
+                ALUSrcB = `imm;
+                ALUOp = 2'b10;
+                PCSource = 0;
+            end
+        end
+        default: begin
         end
     endcase
 end
