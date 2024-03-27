@@ -1,5 +1,5 @@
 `include "opcodes.v"
-`include "alu_opcodes.v"
+`include "alu_opcode.v"
 
 module ALUControlUnit (input [31:0] part_of_inst,
                        input [1:0] alu_op,

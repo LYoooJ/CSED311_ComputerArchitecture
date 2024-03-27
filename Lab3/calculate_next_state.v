@@ -1,6 +1,7 @@
 `include "state_def.v"
 
 module calculate_next_state (input [6:0] opcode,
+                             input clk,
                              input [3:0] current_state,
                              output reg [3:0] next_state);
 
@@ -59,6 +60,8 @@ always @(posedge clk) begin
     end
     `WB: begin
         next_state <= `IF_1;
+    end
+    default: begin
     end
     endcase
 end    

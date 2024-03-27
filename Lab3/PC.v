@@ -1,17 +1,18 @@
-module PC (input reset,
+module PC (input clk,
+           input reset,
            input PCUpdate,
            input [31:0] next_pc,
-           output reg [31:0] current_pc);
+           output reg [31:0] current_pc); 
 
-always @(*) begin
+always @(posedge clk) begin
     if (reset) begin
-        current_pc = 32'b0;
+        current_pc <= 32'b0;
     end
-end 
+    else begin
+        if (PCUpdate) begin
+            current_pc <= next_pc;
+        end
+    end
+end
 
-always @(PCUpdate) begin
-    if (PCUpdate) begin
-        current_pc = next_pc;
-    end
-end  
 endmodule
