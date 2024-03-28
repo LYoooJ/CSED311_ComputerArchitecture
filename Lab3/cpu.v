@@ -29,6 +29,7 @@ module cpu(input reset,       // positive reset signal
   wire [1:0] ALUSrcB;
   wire ALUSrcA;
   wire RegWrite;
+  wire is_ecall;
 
   /*****pc wire *****/
   wire [31:0] next_pc;
@@ -120,6 +121,7 @@ module cpu(input reset,       // positive reset signal
     .part_of_inst(IR[6:0]),           // input
     .bcond(branch_taken),
     .clk(clk),
+    .is_ecall(is_ecall),
     .PCWriteNotCond(PCWriteNotCond),  // output
     .PCWrite(PCWrite),                // output
     .IorD(IorD),                      // output
@@ -210,6 +212,13 @@ module cpu(input reset,       // positive reset signal
     .out(PCUpdate)                // output
   );
 
+  halt_unit halt_unit(
+    .rf17(print_reg[17]),
+    .is_ecall(is_ecall),
+    .is_halted(is_halted)
+  );
+
+  
 always @(posedge clk) begin
   ALUOut <= alu_result;
   branch_taken <= bcond;

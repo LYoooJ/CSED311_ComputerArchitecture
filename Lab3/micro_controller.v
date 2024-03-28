@@ -9,6 +9,7 @@
 module micro_controller (input [3:0] current_state,
                          input [6:0] opcode,
                          input branch_taken,
+                         output reg is_ecall,
                          output reg PCWriteNotCond,
                          output reg PCWrite,
                          output reg IorD,
@@ -35,6 +36,7 @@ always @(*) begin
     ALUSrcB = `B;
     ALUSrcA = `pc;
     RegWrite = 0;
+    is_ecall = 0;
 
     case(current_state)
         //IF: Memory로부터 instruction을 읽고, IR register에 저장
@@ -60,6 +62,9 @@ always @(*) begin
         end
         // instruction decode, read register values
         `ID: begin
+            if (opcode == `ECALL) begin
+                is_ecall = 1;
+            end
             ALUSrcA = `pc;
             ALUSrcB = `four;
             ALUOp = 2'b00; //ADD
