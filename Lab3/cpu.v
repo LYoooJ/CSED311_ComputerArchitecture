@@ -62,7 +62,7 @@ module cpu(input reset,       // positive reset signal
   wire [31:0] MemtoReg_out;
   wire [31:0] ALU_src_A_out;
   wire [31:0] ALU_src_B_out;
-  wire [31:0] PC_source_out;
+  //wire [31:0] PC_source_out;
   
   //
   /***** Register declarations *****/
@@ -77,6 +77,8 @@ module cpu(input reset,       // positive reset signal
   // assign MDR = MemData;
   // assign ALUOut = alu_result;
   reg branch_taken;
+  wire [31:0] next_pc;
+
 
   // ---------- Update program counter ----------
   // PC must be updated on the rising edge (positive edge) of the clock.
@@ -84,7 +86,7 @@ module cpu(input reset,       // positive reset signal
     .clk(clk),
     .reset(reset),              // input (Use reset to initialize PC. Initial value must be 0)
     .PCUpdate(PCUpdate),        // input
-    .next_pc(PC_source_out),          // input
+    .next_pc(next_pc),          // input
     .current_pc(current_pc)     // output
   );
 
@@ -97,8 +99,8 @@ module cpu(input reset,       // positive reset signal
     .rd(IR[11:7]),              // input
     .rd_din(MemtoReg_out),      // input
     .write_enable(RegWrite),    // input
-    .rs1_dout(A),               // output
-    .rs2_dout(B),               // output
+    .rs1_dout(rs1_dout),               // output
+    .rs2_dout(rs2_dout),               // output
     .print_reg(print_reg)       // output (TO PRINT REGISTER VALUES IN TESTBENCH)
   );
 
@@ -194,11 +196,11 @@ module cpu(input reset,       // positive reset signal
     .input_1(alu_result),              // input
     .input_2(ALUOut),             // input
     .control(PCSource),           // input
-    .mux_out(PC_source_out)        // output
+    .mux_out(next_pc)        // output
   );
 
   and_gate and_gate(
-    .input_1(~bcond),              // input
+    .input_1(!bcond),              // input
     .input_2(PCWriteNotCond),     // input
     .out(and_out)                 // output
   );
@@ -229,30 +231,14 @@ module cpu(input reset,       // positive reset signal
 always @(posedge clk) begin
   ALUOut <= alu_result;
   branch_taken <= bcond;
-  if (MemData != 0) begin
-    if (IRWrite) begin
-      IR <= MemData;
-      //$display("PC : %d", current_pc);
-      $display("opcode: (0x%x), ALUOp: (0x%x)",IR[6:0] , alu_control_lines);
-      $display("ALU input_: %d + %d \n", ALU_src_A_out, ALU_src_B_out);
-      $display("result: %d", alu_result);
-      //$display("IR changed to 0x%x ", IR);
+  A <= rs1_dout;
+  B <= rs2_dout;  
 
-    end
-    else begin
-      MDR <= MemData;
-      //$display("MDR changed to %x ", MDR);
-    end
-    // if (IorD) begin
-    //   MDR <= MemData;
-    //   $display("MDR changed to %x ", MDR);
-    // end
-    // else begin
-    //   if (IRWrite) begin
-    //     IR <= MemData;
-    //     $display("IR changed to %x ", IR);
-    //   end
-    // end
+  if (!IorD && IRWrite) begin
+    IR <= MemData;
+  end
+  if (IorD) begin
+    MDR <= MemData;
   end
 end
 
