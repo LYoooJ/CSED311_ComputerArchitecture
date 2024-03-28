@@ -83,35 +83,61 @@ always @(*) begin
             else if (opcode == `LOAD || opcode == `STORE) begin
                 ALUSrcA = `A;
                 ALUSrcB = `imm;
-                ALUOp = 2'b10;
+                ALUOp = 2'b00;
             end
             else if (opcode == `BRANCH) begin
+                //branch 
                 ALUSrcA = `A;
                 ALUSrcB =`B;
-                ALUOp = 2'b01;
+                ALUOp = 2'b10;
                 PCWriteNotCond = 1;
                 PCSource = 1;
             end
             else if (opcode == `JALR) begin
-                ALUSrcA = `A;
-                ALUSrcB = `imm;
-                ALUOp = 2'b10;    
+                ALUSrcA = `pc;
+                ALUSrcB = `four;
+                ALUOp = 2'b00;    
             end
             else begin //JAL
                 ALUSrcA = `pc;
-                ALUSrcB = `imm;
-                ALUOp = 2'b10;                
+                ALUSrcB = `four;
+                ALUOp = 2'b00;                
             end
         end
         `EX_2: begin
-            if (opcode == `BRANCH) begin
-                if (!branch_taken) begin
+            if (opcode == `ARITHMETIC) begin
+                ALUSrcA = `A;
+                ALUSrcB = `B;
+                ALUOp = 2'b10;
+            end
+            else if (opcode == `ARITHMETIC_IMM) begin
+                ALUSrcA = `A;
+                ALUSrcB = `imm;
+                ALUOp = 2'b10;
+            end
+            else if (opcode == `LOAD || opcode == `STORE) begin
+                ALUSrcA = `A;
+                ALUSrcB = `imm;
+                ALUOp = 2'b00;
+            end
+            else if (opcode == `BRANCH) begin
+                if (branch_taken) begin
                     ALUSrcA = `pc;
                     ALUSrcB = `imm;
                     ALUOp = 2'b00;
                     PCSource = 0;
                     PCWrite = 1;
                 end
+            end
+            else if (opcode == `JALR) begin
+                ALUSrcA = `pc;
+                ALUSrcB = `four;
+                ALUOp = 2'b00;    
+            end
+            else begin //JAL
+                ALUSrcA = `pc;
+                ALUSrcB = `four;
+                ALUOp = 2'b00;                
             end
         end
         `MEM_1: begin
@@ -152,6 +178,11 @@ always @(*) begin
             else begin //STORE
                 MemWrite = 1;
                 IorD = 1;
+                ALUSrcA = `pc;
+                ALUSrcB = `four;
+                ALUOp = 2'b00; //
+                PCSource = 0;
+                PCWrite = 1;
             end
         end
         `WB: begin
@@ -161,25 +192,34 @@ always @(*) begin
                 RegWrite = 1;
                 ALUSrcA = `pc;
                 ALUSrcB = `four;
-                ALUOp = 2'b10;
+                ALUOp = 2'b00; //
                 PCSource = 0;
             end
-            if (opcode == `LOAD) begin
+            else if (opcode == `LOAD) begin
                 PCWrite = 1;
                 MemtoReg = 1; 
                 RegWrite = 1;
                 ALUSrcA = `pc;
                 ALUSrcB = `four;
-                ALUOp = 2'b10;
+                ALUOp = 2'b00;
                 PCSource = 0;
             end
-            if (opcode == `JAL || opcode == `JALR) begin
+            else if (opcode == `JAL) begin
                 PCWrite = 1;
                 MemtoReg = 0; //ALUOut
                 RegWrite = 1;
                 ALUSrcA = `pc;
                 ALUSrcB = `imm;
-                ALUOp = 2'b10;
+                ALUOp = 2'b00;
+                PCSource = 0;
+            end
+            else if (opcode == `JALR) begin
+                PCWrite = 1;
+                MemtoReg = 0; //ALUOut
+                RegWrite = 1;
+                ALUSrcA = `A;
+                ALUSrcB = `imm;
+                ALUOp = 2'b00;
                 PCSource = 0;
             end
         end

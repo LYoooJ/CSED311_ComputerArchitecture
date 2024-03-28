@@ -42,12 +42,12 @@ module ALUControlUnit (input [31:0] part_of_inst,
                     // `LOAD: begin
                     //     alu_control_lines = `ADD;
                     // end
-                    `JALR: begin
-                        alu_control_lines = `ADD;
-                    end
-                    `JAL: begin
-                        alu_control_lines = `ADD;
-                    end
+                    // `JALR: begin
+                    //     alu_control_lines = `ADD;
+                    // end
+                    // `JAL: begin
+                    //     alu_control_lines = `ADD;
+                    // end
                     // `STORE: begin
                     //     alu_control_lines = `ADD;
                     // end
