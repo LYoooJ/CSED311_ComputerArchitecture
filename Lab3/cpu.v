@@ -160,10 +160,10 @@ module cpu(input reset,       // positive reset signal
 
  // ---------- IorD ----------
   mux_2x1 IorD_mux(
-    .input_1(next_pc),              // input
-    .input_2(B),                    // input
-    .control(IorD),                 // input
-    .mux_out(IorD_out)              // output
+    .input_1(current_pc),              // input
+    .input_2(ALUOut),                  // input
+    .control(IorD),                    // input
+    .mux_out(IorD_out)                 // output
   );
 
  // ---------- MemToReg Mux ----------
@@ -218,17 +218,39 @@ module cpu(input reset,       // positive reset signal
     .is_halted(is_halted)
   );
 
-  
+// always @(MemData) begin
+//   if (IRWrite) begin
+//     IR <= MemData;
+//     $display("IR changed to %x ", IR);
+//   end
+//   else begin
+//     MDR <= MemData;
+//     $display("MDR changed to %x ", MDR);
+//   end
+// end
+
 always @(posedge clk) begin
   ALUOut <= alu_result;
   branch_taken <= bcond;
-  if (MemRead) begin
-    if (IorD) begin
-      MDR <= MemData;
+  if (MemData != 0) begin
+    if (IRWrite) begin
+      IR <= MemData;
+      $display("IR changed to %x ", IR);
     end
     else begin
-      IR <= MemData;
+      MDR <= MemData;
+      $display("MDR changed to %x ", MDR);
     end
+    // if (IorD) begin
+    //   MDR <= MemData;
+    //   $display("MDR changed to %x ", MDR);
+    // end
+    // else begin
+    //   if (IRWrite) begin
+    //     IR <= MemData;
+    //     $display("IR changed to %x ", IR);
+    //   end
+    // end
   end
 end
 

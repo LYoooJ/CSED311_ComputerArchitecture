@@ -188,4 +188,35 @@ always @(*) begin
     endcase
 end
 
+// always @(opcode) begin
+//     case (opcode)
+//     `ARITHMETIC: begin
+//         $display("ARITHMETIC");
+//     end
+//     `ARITHMETIC_IMM: begin
+//         $display("ARITHMETIC_IMM");
+//     end
+//     `LOAD: begin
+//         $display("LOAD");
+//     end
+//     `JALR: begin
+//         $display("JALR");
+//     end
+//     `STORE: begin
+//         $display("STORE");
+//     end 
+//     `BRANCH: begin
+//         $display("BRANCH");
+//     end
+//     `JAL: begin
+//         $display("JAL");
+//     end
+//     `ECALL: begin
+//         $display("ECALL");
+//     end
+//     default: begin
+//     end
+//     endcase
+// end
+
 endmodule
