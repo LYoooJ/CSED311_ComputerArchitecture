@@ -226,33 +226,34 @@ module cpu(input reset,       // positive reset signal
 //   end
 // end
 
-always @(posedge clk) begin
-  ALUOut <= alu_result;
-  branch_taken <= bcond;
-  if (MemData != 0) begin
-    if (IRWrite) begin
-      IR <= MemData;
-      //$display("PC : %d", current_pc);
-      $display("opcode: (0x%x), ALUOp: (0x%x)",IR[6:0] , alu_control_lines);
-      $display("ALU input_: %d + %d \n", ALU_src_A_out, ALU_src_B_out);
-      $display("result: %d", alu_result);
-      //$display("IR changed to 0x%x ", IR);
+initial begin
 
-    end
+end
+
+always @(posedge clk) begin
+
+  if(!IorD && ir_write) IR <= dout;
+  if(IorD) MDR <= dout;
+  A <= rs1_dout;
+  B <= rs2_dout;
+  ALUOut <= alu_result;
+
+  // ALUOut <= alu_result;
+  // branch_taken <= bcond;
+  // if (MemData != 0) begin
+  //   if (IRWrite) begin
+  //     IR <= MemData;
+  //     $display();
+  //     //$display("PC : %d", current_pc);
+  //     //$display(" ALUOp: (0x%x)", alu_control_lines);
+  //     //$display("ALU input_: %d + %d", ALU_src_A_out, ALU_src_B_out);
+  //     $display("result: %d", alu_result);
+  //     $display("IR changed to 0x%x ", IR);
+  //   end
     else begin
       MDR <= MemData;
       //$display("MDR changed to %x ", MDR);
     end
-    // if (IorD) begin
-    //   MDR <= MemData;
-    //   $display("MDR changed to %x ", MDR);
-    // end
-    // else begin
-    //   if (IRWrite) begin
-    //     IR <= MemData;
-    //     $display("IR changed to %x ", IR);
-    //   end
-    // end
   end
 end
 
