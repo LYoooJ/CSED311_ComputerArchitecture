@@ -6,7 +6,7 @@ module PC (input clk,
 
 always @(posedge clk) begin
     //$display("current_pc: ", current_pc);
-    if (reset) begin
+    if (reset) begin   
         current_pc <= 32'b0;
     end
     else begin

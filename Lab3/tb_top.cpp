@@ -12,7 +12,7 @@
 using namespace std;
 #include "Vtop.h"
 
-#define MAX_SIM_TIME 10000
+#define MAX_SIM_TIME 400
 int sim_time = 0;
 int total_cycle = 0;
 
@@ -48,17 +48,15 @@ int main(int argc, char** argv, char** env) {
     m_trace->dump(sim_time++);
 
     dut->reset = 1;
-    dut->clk = 1;
     dut->eval();
     m_trace->dump(sim_time++);
     
-    dut->clk = 0;
+    dut->clk = 1;
     dut->eval();
     m_trace->dump(sim_time++);
     total_cycle++;
 
     dut->reset = 0;
-    dut->clk = 1;
     dut->eval();
     m_trace->dump(sim_time++);
 

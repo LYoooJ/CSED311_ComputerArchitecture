@@ -169,7 +169,7 @@ module cpu(input reset,       // positive reset signal
   mux_2x1 MemToReg_mux(
     .input_1(ALUOut),               // input
     .input_2(MDR),                  // input
-    .control(IorD),                 // input
+    .control(MemtoReg),                 // input
     .mux_out(MemtoReg_out)          // output
   );
 
@@ -232,7 +232,7 @@ always @(posedge clk) begin
   ALUOut <= alu_result;
   branch_taken <= bcond;
   A <= rs1_dout;
-  B <= rs2_dout;  
+  B <= rs2_dout; 
 
   if (!IorD && IRWrite) begin
     IR <= MemData;
@@ -240,6 +240,10 @@ always @(posedge clk) begin
   if (IorD) begin
     MDR <= MemData;
   end
+
+  $display("current_pc: %x", current_pc);
+  $display("IorD, %x", IorD);
+
 end
 
 endmodule

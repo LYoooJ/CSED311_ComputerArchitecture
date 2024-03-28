@@ -24,22 +24,10 @@ module micro_controller (input [3:0] current_state,
                          output reg RegWrite);
 
 
-initial begin
-    PCWriteNotCond = 0;
-    PCWrite = 0;
-    IorD = 0;
-    MemRead = 0;
-    MemWrite = 0;
-    MemtoReg = 0;
-    IRWrite = 0;
-    PCSource = 0;
-    ALUOp = 2'b00;
-    ALUSrcB = `B;
-    ALUSrcA = `pc;
-    RegWrite = 0;
-    is_ecall = 0;
-end
-
+    initial begin
+        IorD = 0;
+    end
+    
 always @(*) begin
     PCWriteNotCond = 0;
     PCWrite = 0;
@@ -58,7 +46,7 @@ always @(*) begin
     case(current_state)
         //IF: Memory로부터 instruction을 읽고, IR register에 저장
         `IF_1: begin
-            //$display("===== IF start=====");
+            $display("===== IF start=====");
             MemRead = 1;
             IRWrite = 1;
             IorD = 0;
@@ -244,10 +232,42 @@ always @(*) begin
                 ALUOp = 2'b00;
                 PCSource = 0;
             end
-            
         end
         default: begin
         end
     endcase
 end
+
+/***
+ always @(opcode) begin
+     case (opcode)
+     `ARITHMETIC: begin
+         $display("ARITHMETIC");
+     end
+     `ARITHMETIC_IMM: begin
+         $display("ARITHMETIC_IMM");
+     end
+     `LOAD: begin
+         $display("LOAD");
+     end
+     `JALR: begin
+         $display("JALR");
+     end
+     `STORE: begin
+         $display("STORE");
+     end 
+     `BRANCH: begin
+         $display("BRANCH");
+     end
+     `JAL: begin
+         $display("JAL");
+     end
+     `ECALL: begin
+         $display("ECALL");
+     end
+     default: begin
+     end
+     endcase
+ end
+***/
 endmodule
