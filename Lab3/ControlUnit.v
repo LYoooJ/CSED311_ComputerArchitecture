@@ -2,6 +2,7 @@
 
 module ControlUnit (input [6:0] part_of_inst,
                     input bcond,
+                    input reset,
                     input clk,
                     output reg is_ecall,
                     output reg PCWriteNotCond,
@@ -22,6 +23,8 @@ wire [3:0] next_state;
 
 micro_controller micro_controller(
     .current_state(current_state),
+    .clk(clk),
+    .reset(reset),
     .opcode(part_of_inst),
     .branch_taken(bcond),
     .is_ecall(is_ecall),
@@ -42,6 +45,7 @@ micro_controller micro_controller(
 calculate_next_state calculate_next_state(
     .opcode(part_of_inst),
     .clk(clk),
+    .reset(reset),
     .current_state(current_state),
     .next_state(next_state)
 );
