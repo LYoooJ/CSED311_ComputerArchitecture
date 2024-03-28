@@ -29,6 +29,7 @@ module cpu(input reset,       // positive reset signal
   wire [1:0] ALUSrcB;
   wire ALUSrcA;
   wire RegWrite;
+  wire is_ecall;
 
   /*****pc wire *****/
   wire [31:0] next_pc;
@@ -79,6 +80,7 @@ module cpu(input reset,       // positive reset signal
   // assign IR = MemData;
   // assign MDR = MemData;
   // assign ALUOut = alu_result;
+  reg branch_taken;
 
   // ---------- Update program counter ----------
   // PC must be updated on the rising edge (positive edge) of the clock.
@@ -118,8 +120,9 @@ module cpu(input reset,       // positive reset signal
   // ---------- Control Unit ----------
   ControlUnit ctrl_unit(
     .part_of_inst(IR[6:0]),           // input
-    .bcond(bcond),
+    .bcond(branch_taken),
     .clk(clk),
+    .is_ecall(is_ecall),
     .PCWriteNotCond(PCWriteNotCond),  // output
     .PCWrite(PCWrite),                // output
     .IorD(IorD),                      // output
@@ -158,10 +161,10 @@ module cpu(input reset,       // positive reset signal
 
  // ---------- IorD ----------
   mux_2x1 IorD_mux(
-    .input_1(next_pc),              // input
-    .input_2(B),                    // input
-    .control(IorD),                 // input
-    .mux_out(IorD_out)              // output
+    .input_1(current_pc),              // input
+    .input_2(ALUOut),                  // input
+    .control(IorD),                    // input
+    .mux_out(IorD_out)                 // output
   );
 
  // ---------- MemToReg Mux ----------
@@ -210,15 +213,45 @@ module cpu(input reset,       // positive reset signal
     .out(PCUpdate)                // output
   );
 
+  halt_unit halt_unit(
+    .rf17(print_reg[17]),
+    .is_ecall(is_ecall),
+    .is_halted(is_halted)
+  );
+
+// always @(MemData) begin
+//   if (IRWrite) begin
+//     IR <= MemData;
+//     $display("IR changed to %x ", IR);
+//   end
+//   else begin
+//     MDR <= MemData;
+//     $display("MDR changed to %x ", MDR);
+//   end
+// end
+
 always @(posedge clk) begin
   ALUOut <= alu_result;
-  if (MemRead) begin
-    if (IorD) begin
-      MDR <= MemData;
+  branch_taken <= bcond;
+  if (MemData != 0) begin
+    if (IRWrite) begin
+      IR <= MemData;
+      $display("IR changed to %x ", IR);
     end
     else begin
-      IR <= MemData;
+      MDR <= MemData;
+      $display("MDR changed to %x ", MDR);
     end
+    // if (IorD) begin
+    //   MDR <= MemData;
+    //   $display("MDR changed to %x ", MDR);
+    // end
+    // else begin
+    //   if (IRWrite) begin
+    //     IR <= MemData;
+    //     $display("IR changed to %x ", IR);
+    //   end
+    // end
   end
 end
 
