@@ -31,20 +31,25 @@ module cpu(input reset,       // positive reset signal
   wire RegWrite;
   wire is_ecall;
 
+  wire ALUOutUpdate;
+
   /*****pc wire *****/
   wire [31:0] current_pc;
   wire PCUpdate;
 
+  /*****register wire *****/
+  wire [31:0] rs1_dout;
+  wire [31:0] rs2_dout;
+
   /*****MemData wire *****/
   wire [31:0] MemData;
 
-  /*****Instruction *****/
-  //wire [31:0] inst;
-
-  /*****register wire *****/
-  wire [31:0] rd_din;
-  wire [31:0] rs1_dout;
-  wire [31:0] rs2_dout;
+  /*****mux wire *****/
+  wire [31:0] IorD_out;
+  wire [31:0] MemtoReg_out;
+  wire [31:0] ALU_src_A_out;
+  wire [31:0] ALU_src_B_out;
+  wire [31:0] PC_source_out;
 
   /*** Imm_gen_out wire *****/
   wire [31:0]imm_gen_out;
@@ -54,16 +59,6 @@ module cpu(input reset,       // positive reset signal
   wire [3:0] alu_control_lines; //control
   wire [31:0] alu_result;
 
-  wire and_out;
- 
-
-  /*****mux wire *****/
-  wire [31:0] IorD_out;
-  wire [31:0] MemtoReg_out;
-  wire [31:0] ALU_src_A_out;
-  wire [31:0] ALU_src_B_out;
-  //wire [31:0] PC_source_out;
-  
   //
   /***** Register declarations *****/
   reg [31:0] IR; // instruction register
@@ -77,7 +72,6 @@ module cpu(input reset,       // positive reset signal
   // assign MDR = MemData;
   // assign ALUOut = alu_result;
   reg branch_taken;
-  wire [31:0] next_pc;
 
 
   // ---------- Update program counter ----------
@@ -86,7 +80,7 @@ module cpu(input reset,       // positive reset signal
     .clk(clk),
     .reset(reset),              // input (Use reset to initialize PC. Initial value must be 0)
     .PCUpdate(PCUpdate),        // input
-    .next_pc(next_pc),          // input
+    .next_pc(PC_source_out),          // input
     .current_pc(current_pc)     // output
   );
 
@@ -133,7 +127,8 @@ module cpu(input reset,       // positive reset signal
     .ALUOp(ALUOp),                    // output
     .ALUSrcB(ALUSrcB),                // output
     .ALUSrcA(ALUSrcA),                // output
-    .RegWrite(RegWrite)               // output
+    .RegWrite(RegWrite),               // output
+    .ALUOutUpdate(ALUOutUpdate)
   );
 
   // ---------- Immediate Generator ----------
@@ -197,19 +192,7 @@ module cpu(input reset,       // positive reset signal
     .input_1(alu_result),              // input
     .input_2(ALUOut),             // input
     .control(PCSource),           // input
-    .mux_out(next_pc)        // output
-  );
-
-  and_gate and_gate(
-    .input_1(!bcond),              // input
-    .input_2(PCWriteNotCond),     // input
-    .out(and_out)                 // output
-  );
-
-  or_gate or_gate(
-    .input_1(and_out),         // input
-    .input_2(PCWrite),            // input
-    .out(PCUpdate)                // output
+    .mux_out(PC_source_out)        // output
   );
 
   halt_unit halt_unit(
@@ -218,33 +201,23 @@ module cpu(input reset,       // positive reset signal
     .is_halted(is_halted)
   );
 
-// always @(MemData) begin
-//   if (IRWrite) begin
-//     IR <= MemData;
-//     $display("IR changed to %x ", IR);
-//   end
-//   else begin
-//     MDR <= MemData;
-//     $display("MDR changed to %x ", MDR);
-//   end
-// end
+  assign PCUpdate = (PCWriteNotCond & ~bcond) | PCWrite;
 
-always @(posedge clk) begin
-  ALUOut <= alu_result;
-  branch_taken <= bcond;
-  A <= rs1_dout;
-  B <= rs2_dout; 
+  always @(posedge clk) begin
+    if (ALUOutUpdate) begin
+      ALUOut <= alu_result;
+    end
+    branch_taken <= bcond;
+    A <= rs1_dout;
+    B <= rs2_dout; 
 
-  if (!IorD && IRWrite) begin
-    IR <= MemData;
+    if (!IorD && IRWrite) begin
+      IR <= MemData;
+      $display("IR: %x", IR);
+    end
+    if (IorD) begin
+      MDR <= MemData;
+    end
   end
-  if (IorD) begin
-    MDR <= MemData;
-  end
-
-  $display("current_pc: %x", current_pc);
-  $display("IorD, %x", IorD);
-
-end
 
 endmodule
