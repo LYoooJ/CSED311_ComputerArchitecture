@@ -120,6 +120,7 @@ module cpu(input reset,       // positive reset signal
     .part_of_inst(IR[6:0]),           // input
     .bcond(branch_taken),
     .clk(clk),
+    .reset(reset),
     .is_ecall(is_ecall),
     .PCWriteNotCond(PCWriteNotCond),  // output
     .PCWrite(PCWrite),                // output

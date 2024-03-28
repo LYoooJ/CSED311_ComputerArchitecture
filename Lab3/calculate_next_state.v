@@ -2,10 +2,15 @@
 
 module calculate_next_state (input [6:0] opcode,
                              input clk,
+                             input reset,
                              input [3:0] current_state,
                              output reg [3:0] next_state);
 
 always @(posedge clk) begin
+    if (reset) begin
+    next_state <= `IF_1;
+    end
+    else begin
     case (current_state) 
     `IF_1: begin
         next_state <= `IF_2;
@@ -64,6 +69,7 @@ always @(posedge clk) begin
     default: begin
     end
     endcase
+    end
 end    
 
 endmodule
