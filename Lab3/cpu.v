@@ -32,7 +32,6 @@ module cpu(input reset,       // positive reset signal
   wire is_ecall;
 
   /*****pc wire *****/
-  wire [31:0] next_pc;
   wire [31:0] current_pc;
   wire PCUpdate;
 
@@ -51,9 +50,6 @@ module cpu(input reset,       // positive reset signal
   wire [31:0]imm_gen_out;
 
   /***** ALU *****/
-  wire [31:0] alu_in_1;
-  wire [31:0] alu_in_2;
-  wire [1:0] alu_op; 
   wire bcond; //output
   wire [3:0] alu_control_lines; //control
   wire [31:0] alu_result;
@@ -88,7 +84,7 @@ module cpu(input reset,       // positive reset signal
     .clk(clk),
     .reset(reset),              // input (Use reset to initialize PC. Initial value must be 0)
     .PCUpdate(PCUpdate),        // input
-    .next_pc(next_pc),          // input
+    .next_pc(PC_source_out),          // input
     .current_pc(current_pc)     // output
   );
 
@@ -236,11 +232,16 @@ always @(posedge clk) begin
   if (MemData != 0) begin
     if (IRWrite) begin
       IR <= MemData;
-      $display("IR changed to %x ", IR);
+      //$display("PC : %d", current_pc);
+      $display("opcode: (0x%x), ALUOp: (0x%x)",IR[6:0] , alu_control_lines);
+      $display("ALU input_: %d + %d \n", ALU_src_A_out, ALU_src_B_out);
+      $display("result: %d", alu_result);
+      //$display("IR changed to 0x%x ", IR);
+
     end
     else begin
       MDR <= MemData;
-      $display("MDR changed to %x ", MDR);
+      //$display("MDR changed to %x ", MDR);
     end
     // if (IorD) begin
     //   MDR <= MemData;

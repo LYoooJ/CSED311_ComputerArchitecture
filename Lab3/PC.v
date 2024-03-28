@@ -11,7 +11,7 @@ always @(posedge clk) begin
     else begin
         if (PCUpdate) begin
             current_pc <= next_pc;
-        end
+        end;
     end
 end
 

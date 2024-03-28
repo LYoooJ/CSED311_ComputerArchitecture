@@ -6,7 +6,7 @@ module ImmediateGenerator (input [31:0] part_of_inst,
     always @(*) begin
         imm_gen_out = 0;
         opcode = part_of_inst[6:0];
-        
+       
         case(opcode)
             `ARITHMETIC_IMM: begin
                 imm_gen_out = {{21{part_of_inst[31]}}, part_of_inst[30:20]};
@@ -30,6 +30,7 @@ module ImmediateGenerator (input [31:0] part_of_inst,
                 imm_gen_out = 0;
             end
         endcase
+        //$display("Immediate value: 0x%x", imm_gen_out);
     end
-
+    
     endmodule

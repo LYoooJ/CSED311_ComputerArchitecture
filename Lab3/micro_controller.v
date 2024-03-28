@@ -41,6 +41,7 @@ always @(*) begin
     case(current_state)
         //IF: Memory로부터 instruction을 읽고, IR register에 저장
         `IF_1: begin
+            $display("===== IF start=====");
             MemRead = 1;
             IRWrite = 1;
             IorD = 0;
@@ -59,15 +60,18 @@ always @(*) begin
             MemRead = 1;
             IRWrite = 1;
             IorD = 0;
+            //$display("IF done");
         end
         // instruction decode, read register values
         `ID: begin
+            
             if (opcode == `ECALL) begin
                 is_ecall = 1;
             end
             ALUSrcA = `pc;
             ALUSrcB = `four;
             ALUOp = 2'b00; //ADD
+            
         end
         `EX_1: begin
             if (opcode == `ARITHMETIC) begin
@@ -194,6 +198,7 @@ always @(*) begin
                 ALUSrcB = `four;
                 ALUOp = 2'b00; //
                 PCSource = 0;
+
             end
             else if (opcode == `LOAD) begin
                 PCWrite = 1;
@@ -222,41 +227,43 @@ always @(*) begin
                 ALUOp = 2'b00;
                 PCSource = 0;
             end
+            
         end
         default: begin
         end
     endcase
 end
 
-// always @(opcode) begin
-//     case (opcode)
-//     `ARITHMETIC: begin
-//         $display("ARITHMETIC");
-//     end
-//     `ARITHMETIC_IMM: begin
-//         $display("ARITHMETIC_IMM");
-//     end
-//     `LOAD: begin
-//         $display("LOAD");
-//     end
-//     `JALR: begin
-//         $display("JALR");
-//     end
-//     `STORE: begin
-//         $display("STORE");
-//     end 
-//     `BRANCH: begin
-//         $display("BRANCH");
-//     end
-//     `JAL: begin
-//         $display("JAL");
-//     end
-//     `ECALL: begin
-//         $display("ECALL");
-//     end
-//     default: begin
-//     end
-//     endcase
-// end
-
+/***
+ always @(opcode) begin
+     case (opcode)
+     `ARITHMETIC: begin
+         $display("ARITHMETIC");
+     end
+     `ARITHMETIC_IMM: begin
+         $display("ARITHMETIC_IMM");
+     end
+     `LOAD: begin
+         $display("LOAD");
+     end
+     `JALR: begin
+         $display("JALR");
+     end
+     `STORE: begin
+         $display("STORE");
+     end 
+     `BRANCH: begin
+         $display("BRANCH");
+     end
+     `JAL: begin
+         $display("JAL");
+     end
+     `ECALL: begin
+         $display("ECALL");
+     end
+     default: begin
+     end
+     endcase
+ end
+***/
 endmodule
