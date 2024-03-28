@@ -1,4 +1,5 @@
 `include "opcodes.v"
+`include "state_def.v"
 
 module ControlUnit (input [6:0] part_of_inst,
                     input bcond,
@@ -16,15 +17,14 @@ module ControlUnit (input [6:0] part_of_inst,
                     output reg [1:0] ALUOp,
                     output reg [1:0] ALUSrcB,
                     output reg ALUSrcA,
-                    output reg RegWrite);
+                    output reg RegWrite,
+                    output reg ALUOutUpdate);
 
-reg [3:0] current_state;
-wire [3:0] next_state;
+reg [2:0] current_state;
+wire [2:0] next_state;
 
 micro_controller micro_controller(
     .current_state(current_state),
-    .clk(clk),
-    .reset(reset),
     .opcode(part_of_inst),
     .branch_taken(bcond),
     .is_ecall(is_ecall),
@@ -39,19 +39,23 @@ micro_controller micro_controller(
     .ALUOp(ALUOp),
     .ALUSrcB(ALUSrcB),
     .ALUSrcA(ALUSrcA),
-    .RegWrite(RegWrite)
+    .RegWrite(RegWrite),
+    .ALUOutUpdate(ALUOutUpdate)
 );  
 
 calculate_next_state calculate_next_state(
     .opcode(part_of_inst),
-    .clk(clk),
-    .reset(reset),
     .current_state(current_state),
     .next_state(next_state)
 );
 
-always @(next_state) begin
-    current_state <= next_state;
+always @(posedge clk) begin
+    if (reset) begin
+        current_state <= `IF;
+    end
+    else begin
+        current_state <= next_state;
+    end
 end
 
 endmodule
