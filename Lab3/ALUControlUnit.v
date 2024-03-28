@@ -21,6 +21,7 @@ module ALUControlUnit (input [31:0] part_of_inst,
         else begin 
             case(opcode)
                     `ARITHMETIC: begin
+                        $display("ARITHMETIC");
                         if(funct3 == `FUNCT3_ADD && sign == 0) alu_control_lines = `ADD;
                         else if(funct3 == `FUNCT3_SUB && sign == 1) alu_control_lines = `SUB;
                         else if(funct3 == `FUNCT3_SLL) alu_control_lines = `SLL;
@@ -31,6 +32,7 @@ module ALUControlUnit (input [31:0] part_of_inst,
                         else begin end
                     end
                     `ARITHMETIC_IMM: begin
+                        $display("ARITHMETIC_IMM");
                         if(funct3 == `FUNCT3_ADD) alu_control_lines = `ADD;
                         else if(funct3 == `FUNCT3_SLL) alu_control_lines = `SLL;
                         else if(funct3 == `FUNCT3_XOR) alu_control_lines = `XOR;
@@ -52,6 +54,7 @@ module ALUControlUnit (input [31:0] part_of_inst,
                     //     alu_control_lines = `ADD;
                     // end
                     `BRANCH: begin
+                        $display("BRANCH");
                         if(funct3 == `FUNCT3_BEQ) alu_control_lines = `BEQ; //SUB
                         else if(funct3 == `FUNCT3_BNE) alu_control_lines = `BNE;
                         else if(funct3 == `FUNCT3_BLT) alu_control_lines = `BLT;
