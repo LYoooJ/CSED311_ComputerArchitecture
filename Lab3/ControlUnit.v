@@ -1,3 +1,5 @@
+`include "opcodes.v"
+
 module ControlUnit (input [6:0] part_of_inst,
                     input bcond,
                     input clk,

@@ -1,6 +1,5 @@
 `include "opcodes.v"
 
-//Imm gen 은 동일하게 가져옴.
 module ImmediateGenerator (input [31:0] part_of_inst,
                            output reg [31:0] imm_gen_out); 
     reg [6:0] opcode;

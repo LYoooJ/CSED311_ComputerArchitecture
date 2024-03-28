@@ -33,6 +33,7 @@ module cpu(input reset,       // positive reset signal
   /*****pc wire *****/
   wire [31:0] next_pc;
   wire [31:0] current_pc;
+  wire PCUpdate;
 
   /*****MemData wire *****/
   wire [31:0] MemData;
@@ -51,13 +52,13 @@ module cpu(input reset,       // positive reset signal
   /***** ALU *****/
   wire [31:0] alu_in_1;
   wire [31:0] alu_in_2;
-  wire [1:0] alu_op; //이거 해줘야 하나
+  wire [1:0] alu_op; 
   wire bcond; //output
   wire [3:0] alu_control_lines; //control
   wire [31:0] alu_result;
 
   wire and_out;
-  wire PCUpdate;
+ 
 
   /*****mux wire *****/
   wire [31:0] IorD_out;
