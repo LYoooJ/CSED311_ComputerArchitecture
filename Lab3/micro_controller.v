@@ -98,9 +98,15 @@ always @(*) begin
             end
         end
         `MEM: begin
-            if (opcode == `LOAD) begin
+            if (opcode == `LOAD) begin //LD
                 MemRead = 1;
                 IorD = 1;
+            end
+            else if(opcode == `BRANCH) begin //
+                ALUSrcA = `pc;
+                ALUSrcB = `imm;
+                ALUOp = 2'b00;
+                ALUOutUpdate =1;
             end
             else begin //STORE
                 MemWrite = 1;
