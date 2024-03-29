@@ -218,6 +218,7 @@ module cpu(input reset,       // positive reset signal
     if (IorD) begin
       MDR <= MemData;
     end
+    $display("rf17: %d",print_reg[17]);
   end
 
 endmodule

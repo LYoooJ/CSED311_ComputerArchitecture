@@ -48,13 +48,15 @@ always @(*) begin
         // instruction decode, read register values
         `ID: begin
             //$display("ID");
-            if (opcode == `ECALL) begin
-                is_ecall = 1;
-            end
             ALUSrcA = `pc;
             ALUSrcB = `four;
             ALUOp = 2'b00; //ADD
             ALUOutUpdate = 1;
+                        if (opcode == `ECALL) begin
+                $display("Ecall called");
+                 is_ecall = 1;
+            end
+            $display("is_ecall = %d", is_ecall);
         end
         `EX: begin
             if (opcode == `ARITHMETIC) begin
@@ -96,6 +98,8 @@ always @(*) begin
                 ALUOp = 2'b00;   
                 ALUOutUpdate = 1;             
             end
+
+
         end
         `MEM: begin
             if (opcode == `LOAD) begin //LD
@@ -161,8 +165,10 @@ always @(*) begin
                 PCSource = 0;
                 ALUOutUpdate = 1;
             end
+
         end
         default: begin
+            
         end
     endcase
 end
