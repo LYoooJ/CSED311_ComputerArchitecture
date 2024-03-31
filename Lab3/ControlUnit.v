@@ -17,8 +17,7 @@ module ControlUnit (input [6:0] part_of_inst,
                     output reg [1:0] ALUOp,
                     output reg [1:0] ALUSrcB,
                     output reg ALUSrcA,
-                    output reg RegWrite,
-                    output reg ALUOutUpdate);
+                    output reg RegWrite);
 
 reg [2:0] current_state;
 wire [2:0] next_state;
@@ -26,7 +25,6 @@ wire [2:0] next_state;
 micro_controller micro_controller(
     .current_state(current_state),
     .opcode(part_of_inst),
-    .branch_taken(bcond),
     .is_ecall(is_ecall),
     .PCWriteNotCond(PCWriteNotCond),
     .PCWrite(PCWrite),
@@ -39,12 +37,12 @@ micro_controller micro_controller(
     .ALUOp(ALUOp),
     .ALUSrcB(ALUSrcB),
     .ALUSrcA(ALUSrcA),
-    .RegWrite(RegWrite),
-    .ALUOutUpdate(ALUOutUpdate)
+    .RegWrite(RegWrite)
 );  
 
 calculate_next_state calculate_next_state(
     .opcode(part_of_inst),
+    .bcond(bcond),
     .current_state(current_state),
     .next_state(next_state)
 );
