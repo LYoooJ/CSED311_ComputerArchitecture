@@ -31,8 +31,6 @@ module cpu(input reset,       // positive reset signal
   wire RegWrite;
   wire is_ecall;
 
-  wire ALUOutUpdate;
-
   /*****pc wire *****/
   wire [31:0] current_pc;
   wire PCUpdate;
@@ -71,8 +69,23 @@ module cpu(input reset,       // positive reset signal
   // assign IR = MemData;
   // assign MDR = MemData;
   // assign ALUOut = alu_result;
-  reg branch_taken;
 
+  assign PCUpdate = (PCWriteNotCond & ~bcond) | PCWrite;
+
+  always @(posedge clk) begin
+    ALUOut <= alu_result;
+    A <= rs1_dout;
+    B <= rs2_dout; 
+
+    if (!IorD && IRWrite) begin
+      IR <= MemData;
+      //$display("IR: %x", IR);
+    end
+    if (IorD) begin
+      MDR <= MemData;
+    end
+    //$display("rf17: %d",print_reg[17]);
+  end
 
   // ---------- Update program counter ----------
   // PC must be updated on the rising edge (positive edge) of the clock.
@@ -112,7 +125,7 @@ module cpu(input reset,       // positive reset signal
   // ---------- Control Unit ----------
   ControlUnit ctrl_unit(
     .part_of_inst(IR[6:0]),           // input
-    .bcond(branch_taken),
+    .bcond(bcond),
     .clk(clk),
     .reset(reset),
     .is_ecall(is_ecall),
@@ -127,8 +140,7 @@ module cpu(input reset,       // positive reset signal
     .ALUOp(ALUOp),                    // output
     .ALUSrcB(ALUSrcB),                // output
     .ALUSrcA(ALUSrcA),                // output
-    .RegWrite(RegWrite),               // output
-    .ALUOutUpdate(ALUOutUpdate)
+    .RegWrite(RegWrite)              // output
   );
 
   // ---------- Immediate Generator ----------
@@ -200,25 +212,5 @@ module cpu(input reset,       // positive reset signal
     .is_ecall(is_ecall),
     .is_halted(is_halted)
   );
-
-  assign PCUpdate = (PCWriteNotCond & ~bcond) | PCWrite;
-
-  always @(posedge clk) begin
-    if (ALUOutUpdate) begin
-      ALUOut <= alu_result;
-    end
-    branch_taken <= bcond;
-    A <= rs1_dout;
-    B <= rs2_dout; 
-
-    if (!IorD && IRWrite) begin
-      IR <= MemData;
-      $display("IR: %x", IR);
-    end
-    if (IorD) begin
-      MDR <= MemData;
-    end
-    $display("rf17: %d",print_reg[17]);
-  end
 
 endmodule
