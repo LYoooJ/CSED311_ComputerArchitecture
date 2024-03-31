@@ -8,7 +8,6 @@
 
 module micro_controller (input [2:0] current_state,
                         input [6:0] opcode,
-                        input branch_taken,
                         output reg is_ecall,
                         output reg PCWriteNotCond,
                         output reg PCWrite,
@@ -21,8 +20,7 @@ module micro_controller (input [2:0] current_state,
                         output reg [1:0] ALUOp,
                         output reg [1:0] ALUSrcB,
                         output reg ALUSrcA,
-                        output reg RegWrite,
-                        output reg ALUOutUpdate);
+                        output reg RegWrite);
 
 always @(*) begin
         PCWriteNotCond = 0;
@@ -38,7 +36,7 @@ always @(*) begin
         ALUSrcA = `pc;
         RegWrite = 0;
         is_ecall = 0;
-        ALUOutUpdate = 0;
+
     case(current_state)
         `IF: begin
             MemRead = 1;
@@ -51,31 +49,25 @@ always @(*) begin
             ALUSrcA = `pc;
             ALUSrcB = `four;
             ALUOp = 2'b00; //ADD
-            ALUOutUpdate = 1;
-                        if (opcode == `ECALL) begin
-                $display("Ecall called");
+            if (opcode == `ECALL) begin
                  is_ecall = 1;
             end
-            $display("is_ecall = %d", is_ecall);
         end
-        `EX: begin
+        `EX_1: begin
             if (opcode == `ARITHMETIC) begin
                 ALUSrcA = `A;
                 ALUSrcB = `B;
                 ALUOp = 2'b10;
-                ALUOutUpdate = 1;
             end
             else if (opcode == `ARITHMETIC_IMM) begin
                 ALUSrcA = `A;
                 ALUSrcB = `imm;
                 ALUOp = 2'b10;
-                ALUOutUpdate = 1;
             end
             else if (opcode == `LOAD || opcode == `STORE) begin
                 ALUSrcA = `A;
                 ALUSrcB = `imm;
                 ALUOp = 2'b00;
-                ALUOutUpdate = 1;
             end
             else if (opcode == `BRANCH) begin
                 //branch 
@@ -84,33 +76,29 @@ always @(*) begin
                 ALUOp = 2'b10;
                 PCWriteNotCond = 1;
                 PCSource = 1;
-                ALUOutUpdate = 1;
             end
             else if (opcode == `JALR) begin
                 ALUSrcA = `pc;
                 ALUSrcB = `four;
                 ALUOp = 2'b00;   
-                ALUOutUpdate = 1; 
             end
             else begin //JAL
                 ALUSrcA = `pc;
                 ALUSrcB = `four;
-                ALUOp = 2'b00;   
-                ALUOutUpdate = 1;             
+                ALUOp = 2'b00;              
             end
-
-
+        end
+        `EX_2: begin
+            if(opcode == `BRANCH) begin //
+                ALUSrcA = `pc;
+                ALUSrcB = `imm;
+                ALUOp = 2'b00;
+            end        
         end
         `MEM: begin
             if (opcode == `LOAD) begin //LD
                 MemRead = 1;
                 IorD = 1;
-            end
-            else if(opcode == `BRANCH) begin //
-                ALUSrcA = `pc;
-                ALUSrcB = `imm;
-                ALUOp = 2'b00;
-                ALUOutUpdate =1;
             end
             else begin //STORE
                 MemWrite = 1;
@@ -120,7 +108,6 @@ always @(*) begin
                 ALUOp = 2'b00; //
                 PCSource = 0;
                 PCWrite = 1;
-                ALUOutUpdate = 1;
             end
         end
         `WB: begin
@@ -133,7 +120,6 @@ always @(*) begin
                 ALUSrcB = `four;
                 ALUOp = 2'b00; //
                 PCSource = 0;
-                ALUOutUpdate = 1;
             end
             else if (opcode == `LOAD) begin
                 PCWrite = 1;
@@ -143,7 +129,6 @@ always @(*) begin
                 ALUSrcB = `four;
                 ALUOp = 2'b00;
                 PCSource = 0;
-                ALUOutUpdate = 1;
             end
             else if (opcode == `JAL) begin
                 PCWrite = 1;
@@ -153,7 +138,6 @@ always @(*) begin
                 ALUSrcB = `imm;
                 ALUOp = 2'b00;
                 PCSource = 0;
-                ALUOutUpdate = 1;
             end
             else if (opcode == `JALR) begin
                 PCWrite = 1;
@@ -163,7 +147,6 @@ always @(*) begin
                 ALUSrcB = `imm;
                 ALUOp = 2'b00;
                 PCSource = 0;
-                ALUOutUpdate = 1;
             end
 
         end
