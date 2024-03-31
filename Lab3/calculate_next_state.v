@@ -13,15 +13,14 @@ always @(*) begin
             if (opcode == `JAL) begin
                 next_state = `EX_1;
             end
-            //else if(opcode == `ECALL) begin
-             //   $display("ECALL");
-             //   next_state = `IF;
-            //end
             else begin
                 next_state = `ID;
             end
         end
         `ID: begin
+            if(opcode == `ECALL) begin
+               next_state = `IF;
+            end
             next_state = `EX_1;
         end
         `EX_1: begin

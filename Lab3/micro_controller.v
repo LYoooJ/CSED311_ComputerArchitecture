@@ -50,7 +50,9 @@ always @(*) begin
             ALUSrcB = `four;
             ALUOp = 2'b00; //ADD
             if (opcode == `ECALL) begin
-                 is_ecall = 1;
+                is_ecall = 1;
+                PCWrite = 1;
+                PCSource = 0;
             end
         end
         `EX_1: begin

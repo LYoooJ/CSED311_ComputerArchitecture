@@ -79,7 +79,7 @@ module cpu(input reset,       // positive reset signal
 
     if (!IorD && IRWrite) begin
       IR <= MemData;
-      //$display("IR: %x", IR);
+      $display("IR: %x", IR);
     end
     if (IorD) begin
       MDR <= MemData;
