@@ -1,6 +1,7 @@
 `include "state_def.v"
 
-module calculate_next_state (input [6:0] opcode,
+module calculate_next_state (input [6:0] IR_opcode,
+                             input [6:0] inst_opcode,
                              input bcond,
                              input [2:0] current_state,
                              output reg [2:0] next_state);
@@ -10,7 +11,7 @@ always @(*) begin
 
     case (current_state) 
         `IF: begin
-            if (opcode == `JAL) begin
+            if (inst_opcode == `JAL) begin
                 next_state = `EX_1;
             end
             else begin
@@ -18,16 +19,16 @@ always @(*) begin
             end
         end
         `ID: begin
-            if(opcode == `ECALL) begin
+            if(IR_opcode == `ECALL) begin
                next_state = `IF;
             end
             next_state = `EX_1;
         end
         `EX_1: begin
-            if (opcode == `ARITHMETIC || opcode == `ARITHMETIC_IMM || opcode == `JALR || opcode == `JAL) begin
+            if (IR_opcode == `ARITHMETIC || IR_opcode == `ARITHMETIC_IMM || IR_opcode == `JALR || IR_opcode == `JAL) begin
                 next_state = `WB;
             end
-            else if (opcode == `LOAD || opcode == `STORE) begin
+            else if (IR_opcode == `LOAD || IR_opcode == `STORE) begin
                 next_state = `MEM;
             end
             else begin //Bxx
@@ -43,7 +44,7 @@ always @(*) begin
             next_state = `IF;
         end
         `MEM: begin
-            if (opcode == `LOAD) begin
+            if (IR_opcode == `LOAD) begin
                 next_state = `WB;
             end
             else begin //STORE

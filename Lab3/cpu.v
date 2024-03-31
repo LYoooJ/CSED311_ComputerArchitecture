@@ -79,7 +79,6 @@ module cpu(input reset,       // positive reset signal
 
     if (!IorD && IRWrite) begin
       IR <= MemData;
-      $display("IR: %x", IR);
     end
     if (IorD) begin
       MDR <= MemData;
@@ -124,7 +123,8 @@ module cpu(input reset,       // positive reset signal
 
   // ---------- Control Unit ----------
   ControlUnit ctrl_unit(
-    .part_of_inst(IR[6:0]),           // input
+    .IR_opcode(IR[6:0]),           // input
+    .inst_opcode(MemData[6:0]),
     .bcond(bcond),
     .clk(clk),
     .reset(reset),

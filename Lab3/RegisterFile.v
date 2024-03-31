@@ -30,12 +30,4 @@ module RegisterFile(input	reset,
         rf[rd] <= rd_din;
     end
   end
-
-  always @(rf[14]) begin
-    $display("rf[14]: %x", rf[14]);
-  end
-
-  always @(rf[15]) begin
-    $display("rf[15]: %x", rf[15]);
-  end
 endmodule

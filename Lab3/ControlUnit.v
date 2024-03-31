@@ -1,7 +1,8 @@
 `include "opcodes.v"
 `include "state_def.v"
 
-module ControlUnit (input [6:0] part_of_inst,
+module ControlUnit (input [6:0] IR_opcode,
+                    input [6:0] inst_opcode,
                     input bcond,
                     input reset,
                     input clk,
@@ -24,7 +25,7 @@ wire [2:0] next_state;
 
 micro_controller micro_controller(
     .current_state(current_state),
-    .opcode(part_of_inst),
+    .opcode(IR_opcode),
     .is_ecall(is_ecall),
     .PCWriteNotCond(PCWriteNotCond),
     .PCWrite(PCWrite),
@@ -41,7 +42,8 @@ micro_controller micro_controller(
 );  
 
 calculate_next_state calculate_next_state(
-    .opcode(part_of_inst),
+    .IR_opcode(IR_opcode),
+    .inst_opcode(inst_opcode),
     .bcond(bcond),
     .current_state(current_state),
     .next_state(next_state)
