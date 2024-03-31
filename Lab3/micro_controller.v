@@ -93,6 +93,8 @@ always @(*) begin
                 ALUSrcA = `pc;
                 ALUSrcB = `imm;
                 ALUOp = 2'b00;
+                PCWrite = 1;
+                PCSource = 0;
             end        
         end
         `MEM: begin
