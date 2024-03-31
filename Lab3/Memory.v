@@ -16,9 +16,6 @@ module Memory #(parameter MEM_DEPTH = 16384) (input reset,
   assign dout = (mem_read) ? mem[mem_addr] : 32'b0;
 
   always @(posedge clk) begin
-    if (dout != 0) begin
-      $display("dout: %x", dout);
-    end
     // Initialize data memory (do not touch)
     if (reset) begin
       for (i = 0; i < MEM_DEPTH; i = i + 1)

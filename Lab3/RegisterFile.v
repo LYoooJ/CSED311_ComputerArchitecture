@@ -31,7 +31,4 @@ module RegisterFile(input	reset,
     end
   end
 
-  always @(rf[2]) begin
-    $display("rf2: %x", rf[2]);
-  end
 endmodule
