@@ -1,6 +1,7 @@
 `include "state_def.v"
 
 module calculate_next_state (input [6:0] opcode,
+                             input bcond,
                              input [2:0] current_state,
                              output reg [2:0] next_state);
 
@@ -10,7 +11,7 @@ always @(*) begin
     case (current_state) 
         `IF: begin
             if (opcode == `JAL) begin
-                next_state = `EX;
+                next_state = `EX_1;
             end
             //else if(opcode == `ECALL) begin
              //   $display("ECALL");
@@ -21,9 +22,9 @@ always @(*) begin
             end
         end
         `ID: begin
-            next_state = `EX;
+            next_state = `EX_1;
         end
-        `EX: begin
+        `EX_1: begin
             if (opcode == `ARITHMETIC || opcode == `ARITHMETIC_IMM || opcode == `JALR || opcode == `JAL) begin
                 next_state = `WB;
             end
@@ -31,8 +32,16 @@ always @(*) begin
                 next_state = `MEM;
             end
             else begin //Bxx
-                next_state = `IF;
+                if (bcond) begin
+                    next_state = `EX_2;
+                end
+                else begin
+                    next_state = `IF;
+                end
             end
+        end
+        `EX_2: begin
+            next_state = `IF;
         end
         `MEM: begin
             if (opcode == `LOAD) begin
