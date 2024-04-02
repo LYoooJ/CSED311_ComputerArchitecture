@@ -6,7 +6,7 @@
 `define four 2'b01
 `define imm 2'b10
 
-module micro_controller (input [2:0] current_state,
+module micro_code_controller (input [2:0] current_state,
                         input [6:0] opcode,
                         output reg is_ecall,
                         output reg PCWriteNotCond,

@@ -11,7 +11,7 @@ always @(*) begin
 
     case (current_state) 
         `IF: begin
-            if (inst_opcode == `JAL || inst_opcode == `JALR) begin
+            if (inst_opcode == `JAL) begin
                 next_state = `EX_1;
             end
             else begin
