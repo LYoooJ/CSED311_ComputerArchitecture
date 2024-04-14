@@ -1,13 +1,14 @@
 module RegisterFile(input	reset,
                     input clk,
-                    input [4:0] rs1,          // source register 1
-                    input [4:0] rs2,          // source register 2
-                    input [4:0] rd,           // destination register
-                    input [31:0] rd_din,      // input data for rd
-                    input write_enable,       // RegWrite signal
-                    output [31:0] rs1_dout,   // output of rs 1
-                    output [31:0] rs2_dout,
-                    output [31:0] print_reg[0:31]);  // output of rs 2
+                    input [4:0] rs1,                // source register 1
+                    input [4:0] rs2,                // source register 2
+                    input [4:0] rd,                 // destination register
+                    input [31:0] rd_din,            // input data for rd
+                    input write_enable,             // RegWrite signal
+                    output [31:0] rs1_dout,         // output of rs 1
+                    output [31:0] rs2_dout,         // output of rs 2
+                    output [31:0] rf_17,            // register 17
+                    output [31:0] print_reg[0:31]);
   integer i;
   // Register file
   reg [31:0] rf[0:31];
@@ -15,6 +16,7 @@ module RegisterFile(input	reset,
   // Asynchronously read register file
   assign rs1_dout = rf[rs1];
   assign rs2_dout = rf[rs2];
+  assign rf_17 = rf[17];
 
   always @(posedge clk) begin
     // Initialize register file (do not touch)

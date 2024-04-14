@@ -44,7 +44,7 @@ module ALUControlUnit (input [31:0] part_of_inst,
                         else begin end
                     end
                     `BRANCH: begin
-                        if(funct3 == `FUNCT3_BEQ) alu_control_lines = `BEQ; //SUB
+                        if(funct3 == `FUNCT3_BEQ) alu_control_lines = `BEQ;
                         else if(funct3 == `FUNCT3_BNE) alu_control_lines = `BNE;
                         else if(funct3 == `FUNCT3_BLT) alu_control_lines = `BLT;
                         else if(funct3 == `FUNCT3_BGE) alu_control_lines = `BGE;
