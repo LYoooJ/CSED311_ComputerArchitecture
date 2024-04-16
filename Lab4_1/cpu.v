@@ -13,6 +13,9 @@ module cpu(input reset,       // positive reset signal
            output is_halted, // Whehther to finish simulation
            output [31:0]print_reg[0:31]); // Whehther to finish simulation
   /***** Wire declarations *****/
+  
+
+
   /***** Register declarations *****/
   // You need to modify the width of registers
   // In addition, 
@@ -163,6 +166,39 @@ module cpu(input reset,       // positive reset signal
     else begin
     end
   end
+
+  //
+  HazardDetection HazardDetection(
+
+  );
+
+  ForwardingUnit ForwardingUnit(
+
+  );
+
+  Adder Adder(
+
+  );
+
+  mux_2x1 mux_2x1_isEcall(
+
+  );
+
+  mux_2x1 mux_2x1_MemtoReg(
+
+  );
+
+  mux_4x1 mux_4x1_A(
+
+  );
+
+  mux_4x1 mux_4x1_B(
+
+  );
+
+
+
+
 
   
 endmodule
