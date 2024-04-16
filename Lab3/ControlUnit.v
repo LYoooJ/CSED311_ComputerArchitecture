@@ -23,7 +23,7 @@ module ControlUnit (input [6:0] IR_opcode,
 reg [2:0] current_state;
 wire [2:0] next_state;
 
-micro_controller micro_controller(
+micro_code_controller micro_code_controller(
     .current_state(current_state),
     .opcode(IR_opcode),
     .is_ecall(is_ecall),

@@ -30,7 +30,6 @@ module ImmediateGenerator (input [31:0] part_of_inst,
                 imm_gen_out = 0;
             end
         endcase
-        //$display("Immediate value: 0x%x", imm_gen_out);
     end
     
     endmodule
