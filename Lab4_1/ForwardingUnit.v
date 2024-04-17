@@ -1,5 +1,3 @@
-`include opcodes.v
-
 module ForwardingUnit (input [4:0] EX_rs1,
                        input [4:0] EX_rs2,
                        input [4:0] MEM_rd,

@@ -1,6 +1,6 @@
 `include "opcodes.v"
 
-module control_unit(
+module ControlUnit(
     input [6:0] part_of_inst,   // input
     output reg mem_read,        // output
     output reg mem_to_reg,      // output

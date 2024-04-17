@@ -1,4 +1,4 @@
-module pc (input reset,
+module PC (input reset,
            input clk,
            input PCwrite,
            input [31:0] next_pc,

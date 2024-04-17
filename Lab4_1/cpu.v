@@ -18,10 +18,6 @@ module cpu(input reset,       // positive reset signal
   wire [31:0] next_pc;
   wire[31:0] inst;
 
-  wire [4:0] mux_isEcall_out;
-  wire [31:0] mux_forwardA_out;
-  wire [31:0] mux_forwardB_out;
-
   /***** register wire *****/
   wire [31:0] rs1_dout;
   wire [31:0] rs2_dout;
@@ -34,7 +30,7 @@ module cpu(input reset,       // positive reset signal
 
   wire [31:0] alu_in_1;
   wire [31:0] alu_in_2;
-  wire alu_result;
+  wire [31:0] alu_result;
   //wire alu_bcond;
 
   /***** control unit wire *****/
@@ -51,15 +47,20 @@ module cpu(input reset,       // positive reset signal
   wire IFIDwrite;
   wire PCwrite;
 
+  /***** Forwarding Unit wire *****/
+  wire [1:0] ForwardA;
+  wire [1:0] ForwardB;
+
   /***** mux wire *****/
   wire mux_control_out;
   wire mux_MemtoReg_out;
-  wire [4:0] mux_isEcall_out;
+  wire [31:0] mux_isEcall_out;
   wire [31:0] mux_forwardA_out;
   wire [31:0] mux_forwardB_out;
 
   /***** alu control *****/
-  wire alu_control_lines; //output wire
+  wire [3:0] alu_control_lines; //output wire
+  wire alu_bcond;
   
   /***** Register declarations *****/
   // You need to modify the width of registers
@@ -70,21 +71,21 @@ module cpu(input reset,       // positive reset signal
   reg [31:0] IF_ID_inst;           // will be used in ID stage
   /***** ID/EX pipeline registers *****/
   // From the control unit
-  reg ID_EX_alu_op;         // will be used in EX stage
+  reg [1:0] ID_EX_alu_op;         // will be used in EX stage
   reg ID_EX_alu_src;        // will be used in EX stage
   reg ID_EX_mem_write;      // will be used in MEM stage
   reg ID_EX_mem_read;       // will be used in MEM stage
   reg ID_EX_mem_to_reg;     // will be used in WB stage
   reg ID_EX_reg_write;      // will be used in WB stage
   // From others
-  reg ID_EX_rs1_data;
-  reg ID_EX_rs2_data;
-  reg ID_EX_imm;
+  reg [31:0] ID_EX_rs1_data;
+  reg [31:0] ID_EX_rs2_data;
+  reg [31:0] ID_EX_imm;
   reg ID_EX_ALU_ctrl_unit_input;
-  reg ID_EX_rd;
+  reg [4:0] ID_EX_rd;
   //추가
-  reg ID_EX_rs1;
-  reg ID_EX_rs2;
+  reg [4:0] ID_EX_rs1;
+  reg [4:0] ID_EX_rs2;
 
   /***** EX/MEM pipeline registers *****/
   // From the control unit
@@ -94,25 +95,26 @@ module cpu(input reset,       // positive reset signal
   reg EX_MEM_mem_to_reg;    // will be used in WB stage
   reg EX_MEM_reg_write;     // will be used in WB stage
   // From others
-  reg EX_MEM_alu_out;
-  reg EX_MEM_dmem_data;
-  reg EX_MEM_rd;
+  reg [31:0] EX_MEM_alu_out;
+  reg [31:0] EX_MEM_dmem_data;
+  reg [4:0] EX_MEM_rd;
 
   /***** MEM/WB pipeline registers *****/
   // From the control unit
   reg MEM_WB_mem_to_reg;    // will be used in WB stage
   reg MEM_WB_reg_write;     // will be used in WB stage
   // From others
-  reg MEM_WB_mem_to_reg_src_1;
-  reg MEM_WB_mem_to_reg_src_2;
+  reg [31:0] MEM_WB_mem_to_reg_src_1;
+  reg [31:0] MEM_WB_mem_to_reg_src_2;
   //추가
-  reg MEM_WB_rd;
+  reg [4:0] MEM_WB_rd;
 
   // ---------- Update program counter ----------
   // PC must be updated on the rising edge (positive edge) of the clock.
   PC pc(
     .reset(reset),       // input (Use reset to initialize PC. Initial value must be 0)
     .clk(clk),         // input
+    .PCwrite(PCwrite),
     .next_pc(next_pc),     // input
     .current_pc(current_pc)   // output
   );
@@ -143,7 +145,7 @@ module cpu(input reset,       // positive reset signal
   RegisterFile reg_file (
     .reset (reset),        // input
     .clk (clk),          // input
-    .rs1 (mux_isEcall_out),          // input
+    .rs1 (mux_isEcall_out[4:0]),          // input
     .rs2 (IF_ID_inst[24:20]),          // input
     .rd (IF_ID_inst[11:7]),           // input
     .rd_din (rd_din),       // input
@@ -158,9 +160,9 @@ module cpu(input reset,       // positive reset signal
   ControlUnit ctrl_unit (
     .part_of_inst(IF_ID_inst[6:0]),  // input
     .mem_read(MemRead),      // output
-    .mem_to_reg(MemToReg),    // output
+    .mem_to_reg(MemtoReg),    // output
     .mem_write(MemWrite),     // output
-    .alu_src(ALUsrc),       // output
+    .alu_src(ALUSrc),       // output
     .write_enable(RegWrite),  // output
     //.pc_to_reg(),     // output
     .alu_op(ALUOp),        // output
@@ -208,9 +210,9 @@ module cpu(input reset,       // positive reset signal
   ALU alu (
     .alu_op(alu_control_lines),      // input
     .alu_in_1(alu_in_1),    // input  
-    .alu_in_2(alu_in_2)),    // input
+    .alu_in_2(alu_in_2),    // input
     .alu_result(alu_result),  // output
-    .alu_bcond(0)     // output
+    .alu_bcond(alu_bcond)     // output
   );
 
   // Update EX/MEM pipeline registers here
@@ -271,7 +273,7 @@ module cpu(input reset,       // positive reset signal
 
   mux_2x1 mux_2x1_isEcall(
     .input_1(17),           // input
-    .input_2(IF_ID_inst[19:15]),           // input
+    .input_2({27'b0, IF_ID_inst[19:15]}),           // input
     .control(is_ecall),              // input
     .mux_out(mux_isEcall_out)               // output
   );

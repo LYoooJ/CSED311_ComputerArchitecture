@@ -1,4 +1,4 @@
-module adder (input [31:0] input_1, 
+module Adder (input [31:0] input_1, 
               input [31:0] input_2, 
               output reg [31:0] sum);
 
