@@ -13,7 +13,6 @@ module cpu(input reset,       // positive reset signal
            output is_halted, // Whehther to finish simulation
            output [31:0]print_reg[0:31]); // Whehther to finish simulation
   /***** Wire declarations *****/
-
   /***** pc wire *****/
   wire [31:0] current_pc;
   wire [31:0] next_pc;
@@ -32,8 +31,11 @@ module cpu(input reset,       // positive reset signal
   wire [31:0] imm_gen_out;
 
   /***** ALU wire *****/
+
   wire [31:0] alu_in_1;
   wire [31:0] alu_in_2;
+  wire alu_result;
+  //wire alu_bcond;
 
   /***** control unit wire *****/
   wire MemRead;
@@ -55,10 +57,6 @@ module cpu(input reset,       // positive reset signal
   wire [4:0] mux_isEcall_out;
   wire [31:0] mux_forwardA_out;
   wire [31:0] mux_forwardB_out;
-
-  /***** alu wire *****/
-  wire alu_result;
-  wire alu_bcond;
 
   /***** alu control *****/
   wire alu_control_lines; //output wire
@@ -148,8 +146,8 @@ module cpu(input reset,       // positive reset signal
     .rs1 (mux_isEcall_out),          // input
     .rs2 (IF_ID_inst[24:20]),          // input
     .rd (IF_ID_inst[11:7]),           // input
-    .rd_din (),       // input
-    .write_enable (),    // input
+    .rd_din (rd_din),       // input
+    .write_enable (MEM_WB_reg_write),    // input
     .rs1_dout (rs1_dout),     // output
     .rs2_dout (rs2_dout),      // output
     .print_reg(print_reg)
@@ -202,7 +200,7 @@ module cpu(input reset,       // positive reset signal
   // ---------- ALU Control Unit ----------
   ALUControlUnit alu_ctrl_unit (
     .part_of_inst(inst[31:0]),  // input
-    .alu_op(),      // output
+    .alu_op(ALUOp),      // input
     .alu_control_lines(alu_control_lines) // output
   );
 
@@ -218,6 +216,7 @@ module cpu(input reset,       // positive reset signal
   // Update EX/MEM pipeline registers here
   always @(posedge clk) begin
     if (reset) begin
+      
     end
     else begin
     end
@@ -244,11 +243,11 @@ module cpu(input reset,       // positive reset signal
 
   //
   HazardDetection HazardDetection(
-    .input_1(IF_ID_inst[19:15]),
-    .input_2(IF_ID_inst[24:20]),
-    .input_3(ID_EX_mem_read),
-
-    .output_1(PCwrite),
+    .input_1(IF_ID_inst[19:15]), //rs1
+    .input_2(IF_ID_inst[24:20]), //rs2
+    .input_3(ID_EX_rd), //rd
+    .input_4(ID_EX_mem_read), 
+    .output_1(PCwrite), 
     .output_2(IFIDwrite),
     .output_3(hazardout)
   );
