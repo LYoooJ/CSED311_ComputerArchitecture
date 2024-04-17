@@ -52,8 +52,9 @@ module cpu(input reset,       // positive reset signal
   /***** mux wire *****/
   wire mux_control_out;
   wire mux_MemtoReg_out;
-  wire mux_A_out;
-  wire mux_B_out;
+  wire [4:0] mux_isEcall_out;
+  wire [31:0] mux_forwardA_out;
+  wire [31:0] mux_forwardB_out;
 
   /***** alu wire *****/
   wire alu_result;
@@ -180,18 +181,18 @@ module cpu(input reset,       // positive reset signal
     end
     else begin
       if(hazardout ==1) begin 
-        ID_EX_alu_op = 0;        
-        ID_EX_alu_src = 0;    // will be used in EX stage
-        ID_EX_mem_write = 0;     // will be used in MEM stage
-        ID_EX_mem_read = 0;     // will be used in MEM stage
-        ID_EX_mem_to_reg = 0;     // will be used in WB stage
-        ID_EX_reg_write = 0;     // will be used in WB stage
+        ID_EX_alu_op <= 0;        
+        ID_EX_alu_src <= 0;    // will be used in EX stage
+        ID_EX_mem_write <= 0;     // will be used in MEM stage
+        ID_EX_mem_read <= 0;     // will be used in MEM stage
+        ID_EX_mem_to_reg <= 0;     // will be used in WB stage
+        ID_EX_reg_write <= 0;     // will be used in WB stage
         // From others //아닐수도
-        ID_EX_rs1_data = 0;
-        ID_EX_rs2_data = 0;
-        ID_EX_imm = 0;
-        ID_EX_ALU_ctrl_unit_input = 0;
-        ID_EX_rd = 0;
+        ID_EX_rs1_data <= 0;
+        ID_EX_rs2_data <= 0;
+        ID_EX_imm <= 0;
+        ID_EX_ALU_ctrl_unit_input <= 0;
+        ID_EX_rd <= 0;
       end
       else begin 
       end
@@ -208,10 +209,10 @@ module cpu(input reset,       // positive reset signal
   // ---------- ALU ----------
   ALU alu (
     .alu_op(alu_control_lines),      // input
-    .alu_in_1(mux_A_out),    // input  
-    .alu_in_2(mux_B_out),    // input
+    .alu_in_1(alu_in_1),    // input  
+    .alu_in_2(alu_in_2)),    // input
     .alu_result(alu_result),  // output
-    .alu_bcond(alu_bcond)     // output
+    .alu_bcond(0)     // output
   );
 
   // Update EX/MEM pipeline registers here
