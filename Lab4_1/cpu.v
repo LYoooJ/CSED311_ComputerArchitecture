@@ -17,13 +17,9 @@ module cpu(input reset,       // positive reset signal
   /***** pc wire *****/
   wire [31:0] current_pc;
   wire [31:0] next_pc;
-
   wire[31:0] inst;
 
-  wire PCwrite;
-  wire IFIDwrite;
   wire [4:0] mux_isEcall_out;
-
 
   /***** register wire *****/
   wire [31:0] rs1_dout;
@@ -43,8 +39,22 @@ module cpu(input reset,       // positive reset signal
 
   /***** hazard detection unit wire *****/
   wire hazardout;
+  wire IFIDwrite;
+  wire PCwrite;
 
+  /***** mux wire *****/
+  wire mux_control_out;
+  wire mux_MemtoReg_out;
+  wire mux_A_out;
+  wire mux_B_out;
 
+  /***** alu wire *****/
+  wire alu_result;
+  wire alu_bcond;
+
+  /***** alu control *****/
+  wire alu_control_lines; //output wire
+  
   /***** Register declarations *****/
   // You need to modify the width of registers
   // In addition, 
@@ -178,17 +188,18 @@ module cpu(input reset,       // positive reset signal
 
   // ---------- ALU Control Unit ----------
   ALUControlUnit alu_ctrl_unit (
-    .part_of_inst(),  // input
-    .alu_op()         // output
+    .part_of_inst(inst[31:0]),  // input
+    .alu_op(),      // output
+    .alu_control_lines(alu_control_lines) // output
   );
 
   // ---------- ALU ----------
   ALU alu (
-    .alu_op(),      // input
-    .alu_in_1(),    // input  
-    .alu_in_2(),    // input
-    .alu_result(),  // output
-    .alu_zero()     // output
+    .alu_op(alu_control_lines),      // input
+    .alu_in_1(mux_A_out),    // input  
+    .alu_in_2(mux_B_out),    // input
+    .alu_result(alu_result),  // output
+    .alu_bcond(alu_bcond)     // output
   );
 
   // Update EX/MEM pipeline registers here
@@ -250,33 +261,32 @@ module cpu(input reset,       // positive reset signal
     .input_1(),           // input
     .input_2(),           // input
     .control(),              // input
-    .mux_out()               // output
+    .mux_out(mux_MemtoReg_out)               // output
   );
 
     mux_2x1 mux_2x1_control(
-    .input_1(p),           // input
+    .input_1(),           // input
     .input_2(0),           // input
     .control(),              // input
-    .mux_out()               // output
+    .mux_out(mux_control_out)               // output
   );
 
   mux_4x1 mux_4x1_A(
-    .input_1(pc_src1_mux_out),           // input
-    .input_2(alu_result),           // input
-    .control(is_jalr),              // input
-    .mux_out(next_pc)               // output
+    .input_1(),           // input
+    .input_2(),           // input
+    .input_3(),           // input
+    .input_4(),           // input
+    .control(),              // input
+    .mux_out(mux_A_out)               // output
   );
 
   mux_4x1 mux_4x1_B(
-    .input_1(pc_src1_mux_out),           // input
-    .input_2(alu_result),           // input
-    .control(is_jalr),              // input
-    .mux_out(next_pc)               // output
+    .input_1(),           // input
+    .input_2(),           // input
+    .input_3(),           // input
+    .input_4(),           // input
+    .control(),              // input
+    .mux_out(mux_B_out)               // output
   );
-
-
-
-
-
   
 endmodule
