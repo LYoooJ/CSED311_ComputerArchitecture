@@ -76,12 +76,10 @@ module cpu(input reset,       // positive reset signal
 
     if (!IorD && IRWrite) begin
       IR <= MemData;
-      $display("IR: 0x%x", IR);
     end
     if (IorD) begin
       MDR <= MemData;
     end
-    $display("ecall: %d", is_ecall);
   end
 
   // ---------- Update program counter ----------
