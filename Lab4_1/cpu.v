@@ -16,7 +16,7 @@ module cpu(input reset,       // positive reset signal
   /***** pc wire *****/
   wire [31:0] current_pc;
   wire [31:0] next_pc;
-  wire[31:0] inst;
+  wire [31:0] inst;
 
   /***** register wire *****/
   wire [31:0] rs1_dout;
@@ -27,11 +27,9 @@ module cpu(input reset,       // positive reset signal
   wire [31:0] imm_gen_out;
 
   /***** ALU wire *****/
-
   wire [31:0] alu_in_1;
   wire [31:0] alu_in_2;
   wire [31:0] alu_result;
-  //wire alu_bcond;
 
   /***** control unit wire *****/
   wire MemRead;
@@ -249,6 +247,7 @@ module cpu(input reset,       // positive reset signal
     .input_2(IF_ID_inst[24:20]), //rs2
     .input_3(ID_EX_rd), //rd
     .input_4(ID_EX_mem_read), 
+    .opcode(IF_ID_inst[6:0]),
     .output_1(PCwrite), 
     .output_2(IFIDwrite),
     .output_3(hazardout)
