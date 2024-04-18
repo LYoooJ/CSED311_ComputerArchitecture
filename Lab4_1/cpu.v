@@ -55,11 +55,16 @@ module cpu(input reset,       // positive reset signal
   wire [31:0] mux_isEcall_out;
   wire [31:0] mux_forwardA_out;
   wire [31:0] mux_forwardB_out;
+  wire [31:0] mux_forward_out;
+  wire forward17;
+  
 
   /***** alu control *****/
   wire [3:0] alu_control_lines; //output wire
   wire alu_bcond;
   
+  /***** Dmem *****/
+  wire [31:0] ReadData;
   /***** Register declarations *****/
   // You need to modify the width of registers
   // In addition, 
@@ -79,7 +84,7 @@ module cpu(input reset,       // positive reset signal
   reg [31:0] ID_EX_rs1_data;
   reg [31:0] ID_EX_rs2_data;
   reg [31:0] ID_EX_imm;
-  reg ID_EX_ALU_ctrl_unit_input;
+  reg [31:0] ID_EX_ALU_ctrl_unit_input;
   reg [4:0] ID_EX_rd;
   //추가
   reg [4:0] ID_EX_rs1;
@@ -106,6 +111,14 @@ module cpu(input reset,       // positive reset signal
   reg [31:0] MEM_WB_mem_to_reg_src_2;
   //추가
   reg [4:0] MEM_WB_rd;
+  
+  wire halted_check;
+  reg ID_EX_is_halted;
+  reg EX_MEM_is_halted;
+  reg MEM_WB_is_halted;
+
+  assign halted_check = ((mux_forward_out == 10) && is_ecall) ? 1 : 0;
+  assign is_halted = MEM_WB_is_halted;
 
   // ---------- Update program counter ----------
   // PC must be updated on the rising edge (positive edge) of the clock.
@@ -128,14 +141,13 @@ module cpu(input reset,       // positive reset signal
   // Update IF/ID pipeline registers here
   always @(posedge clk) begin
     if (reset) begin
-
+      IF_ID_inst <= 32'b0;
     end
     else begin
       if(IFIDwrite == 1) begin
         IF_ID_inst <= inst;
+        $display("%x", IF_ID_inst);
       end
-
-
     end
   end
 
@@ -176,23 +188,48 @@ module cpu(input reset,       // positive reset signal
   // Update ID/EX pipeline registers here
   always @(posedge clk) begin
     if (reset) begin
+      ID_EX_alu_op <= 0;        
+      ID_EX_alu_src <= 0;    // will be used in EX stage
+      ID_EX_mem_write <= 0;     // will be used in MEM stage
+      ID_EX_mem_read <= 0;     // will be used in MEM stage
+      ID_EX_mem_to_reg <= 0;     // will be used in WB stage
+      ID_EX_reg_write <= 0;     // will be used in WB stage
+      // From others //아닐수도
+      ID_EX_rs1_data <= 0;
+      ID_EX_rs2_data <= 0;
+      ID_EX_imm <= 0;
+      ID_EX_ALU_ctrl_unit_input <= 0;
+      ID_EX_rd <= 0;
+      ID_EX_rs1 <= 0;
+      ID_EX_rs2 <= 0;      
+      ID_EX_is_halted <= 0;
     end
     else begin
-      if(hazardout ==1) begin 
+      // From others 
+      ID_EX_rs1_data <= rs1_dout;
+      ID_EX_rs2_data <= rs2_dout;
+      ID_EX_imm <= imm_gen_out;
+      ID_EX_ALU_ctrl_unit_input <= IF_ID_inst;
+      ID_EX_rd <= IF_ID_inst[11:7];
+      ID_EX_rs1 <= IF_ID_inst[19:15];
+      ID_EX_rs2 <= IF_ID_inst[24:20];
+      ID_EX_is_halted <= halted_check;
+
+      if(hazardout == 1) begin 
         ID_EX_alu_op <= 0;        
         ID_EX_alu_src <= 0;    // will be used in EX stage
         ID_EX_mem_write <= 0;     // will be used in MEM stage
         ID_EX_mem_read <= 0;     // will be used in MEM stage
         ID_EX_mem_to_reg <= 0;     // will be used in WB stage
         ID_EX_reg_write <= 0;     // will be used in WB stage
-        // From others //아닐수도
-        ID_EX_rs1_data <= 0;
-        ID_EX_rs2_data <= 0;
-        ID_EX_imm <= 0;
-        ID_EX_ALU_ctrl_unit_input <= 0;
-        ID_EX_rd <= 0;
       end
       else begin 
+        ID_EX_alu_op <= ALUOp;        
+        ID_EX_alu_src <=ALUSrc ;    // will be used in EX stage
+        ID_EX_mem_write <= MemWrite;     // will be used in MEM stage
+        ID_EX_mem_read <= MemRead;     // will be used in MEM stage
+        ID_EX_mem_to_reg <= MemtoReg;     // will be used in WB stage
+        ID_EX_reg_write <= RegWrite;     // will be used in WB stage
       end
     end
   end
@@ -216,9 +253,28 @@ module cpu(input reset,       // positive reset signal
   // Update EX/MEM pipeline registers here
   always @(posedge clk) begin
     if (reset) begin
-      
+      EX_MEM_mem_write <=0;     // will be used in MEM stage
+      EX_MEM_mem_read <=0;      // will be used in MEM stage
+      EX_MEM_is_branch <=0;     // will be used in MEM stage
+      EX_MEM_mem_to_reg <=0;    // will be used in WB stage
+      EX_MEM_reg_write <=0;     // will be used in WB stage
+    // From others
+      EX_MEM_alu_out <= 0;
+      EX_MEM_dmem_data <= 0;
+      EX_MEM_rd <= 0;
+      EX_MEM_is_halted <= 0;
     end
     else begin
+      EX_MEM_mem_write <= ID_EX_mem_write;     // will be used in MEM stage
+      EX_MEM_mem_read <= ID_EX_mem_read;      // will be used in MEM stage
+      //EX_MEM_is_branch <= ID_EX_;     // will be used in MEM stage
+      EX_MEM_mem_to_reg <= ID_EX_mem_to_reg;    // will be used in WB stage
+      EX_MEM_reg_write <= ID_EX_reg_write;     // will be used in WB stage
+      // From others
+      EX_MEM_alu_out <= alu_result;
+      EX_MEM_dmem_data <= mux_forwardB_out;
+      EX_MEM_rd <= ID_EX_rd;
+      EX_MEM_is_halted <= ID_EX_is_halted;
     end
   end
 
@@ -230,14 +286,26 @@ module cpu(input reset,       // positive reset signal
     .din (EX_MEM_dmem_data),        // input
     .mem_read (MemRead),   // input
     .mem_write (MemWrite),  // input
-    .dout (MEM_WB_mem_to_reg_src_2)        // output
+    .dout (ReadData)        // output
   );
 
   // Update MEM/WB pipeline registers here
   always @(posedge clk) begin
     if (reset) begin
+      MEM_WB_mem_to_reg <=0;    // will be used in WB stage
+      MEM_WB_reg_write <=0;     // will be used in WB stage
+      MEM_WB_mem_to_reg_src_1 <=0;
+      MEM_WB_mem_to_reg_src_2 <=0;
+      MEM_WB_rd <= 0;
+      MEM_WB_is_halted <= 0;
     end
     else begin
+      MEM_WB_mem_to_reg <=EX_MEM_mem_to_reg;    // will be used in WB stage
+      MEM_WB_reg_write <= EX_MEM_reg_write;     // will be used in WB stage
+      MEM_WB_mem_to_reg_src_1 <= EX_MEM_alu_out;
+      MEM_WB_mem_to_reg_src_2 <= ReadData;
+      MEM_WB_rd <= EX_MEM_rd;
+      MEM_WB_is_halted <= EX_MEM_is_halted;
     end
   end
 
@@ -263,6 +331,14 @@ module cpu(input reset,       // positive reset signal
     .ForwardA(ForwardA),
     .ForwardB(ForwardB)
   );
+  ecall_forward ecall_forward(
+    .opcode(IF_ID_inst[6:0]), //input
+    .EX_rd(ID_EX_rd),
+    .MEM_rd(EX_MEM_rd),
+    .EX_RegWrite(ID_EX_reg_write),
+    .MEM_RegWrite(EX_MEM_reg_write),
+    .control(forward17)
+  )
 
   Adder Adder(
     .input_1(current_pc),
@@ -314,6 +390,15 @@ module cpu(input reset,       // positive reset signal
     .input_4(0),
     .control(ForwardB),              // input
     .mux_out(mux_forwardB_out)               // output
+  );
+
+    mux_4x1 mux_4x1_forward(
+    .input_1(rs1_dout),           // input
+    .input_2(alu_result),           // input
+    .input_3(ReadData),
+    .input_4(0),
+    .control(forward17),              // input
+    .mux_out(mux_forward_out)               // output
   );
 
 endmodule
