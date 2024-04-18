@@ -4,27 +4,26 @@ module ALU (input [3:0] alu_op,
             input [31:0] alu_in_1,
             input [31:0] alu_in_2,
             output reg [31:0] alu_result,
-            output reg alu_bcond);   // 여기 고치기
+            output reg alu_bcond);
 
 always @(*) begin
     alu_bcond = 0;
     alu_result = 0;
 
     case(alu_op)
-        //branch condition
         `BEQ: begin
             if((alu_in_1 - alu_in_2) == 0) begin
-                alu_bcond = 1; // 같으면 jump
+                alu_bcond = 1;
             end
         end
         `BNE: begin
             if((alu_in_1 - alu_in_2) != 0) begin
-                alu_bcond =1; // 다르면 jump
+                alu_bcond = 1;
             end
         end
         `BLT: begin
             if(alu_in_1 < alu_in_2) begin 
-                alu_bcond = 1; // rs1_dout < rs2_dout 이면 jump
+                alu_bcond = 1; 
             end
         end
         `BGE: begin
@@ -34,7 +33,6 @@ always @(*) begin
         end
         `ADD: begin
             alu_result = alu_in_1 + alu_in_2;
-            //$display("ADD");
         end
         `SUB: begin
             alu_result = alu_in_1 - alu_in_2;
@@ -58,6 +56,5 @@ always @(*) begin
             alu_result = 0;
         end
     endcase
-    $display("alu_in1: 0x%x, alu_in2: 0x%x, alu_result: 0x%x\n", alu_in_1, alu_in_2, alu_result);
 end
 endmodule

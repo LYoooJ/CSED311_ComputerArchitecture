@@ -8,7 +8,6 @@ module mux_4x1 (input [31:0] input_1,
 always @(*) begin
     if (control == 2'b00) begin 
         mux_out = input_1;
-        //$display("mux out: %d", mux_out);
     end
     else if(control == 2'b01) begin
         mux_out = input_2;

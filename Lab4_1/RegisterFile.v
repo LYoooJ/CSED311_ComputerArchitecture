@@ -18,10 +18,8 @@ module RegisterFile(input	reset,
 
   always @(clk) begin
     if (clk==0) begin // negative edge
-      if (write_enable & (rd != 0)) begin
+      if (write_enable & (rd != 0))
         rf[rd] <= rd_din;
-        $display("rf[%d] <= 0x%x", rd, rd_din);
-      end
     end
     else begin // positive edge
       if (reset) begin
@@ -34,7 +32,4 @@ module RegisterFile(input	reset,
     end
   end
 
-  always @(rs1) begin
-    $display("rs1: %d", rs1);
-  end
 endmodule
