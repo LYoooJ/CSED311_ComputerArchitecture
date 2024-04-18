@@ -10,6 +10,7 @@ always @(*) begin
     else begin 
         mux_out = input_2;
     end
+    //$display("is_ecallmux: %d", mux_out);
 end
 
 endmodule

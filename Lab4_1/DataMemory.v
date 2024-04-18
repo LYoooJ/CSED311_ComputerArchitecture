@@ -15,6 +15,12 @@ module DataMemory #(parameter MEM_DEPTH = 16384) (input reset,
   // Asynchrnously read data from the memory
   // Synchronously write data to the memory
   assign dout = (mem_read) ? mem[dmem_addr] : 32'b0;
+  always @(*) begin
+    if(mem_read) begin
+    $display("Mem[0x%x]dout: 0x%x", addr , dout);
+    end
+  end
+
   always @(posedge clk) begin
     if (reset) begin
       for (i = 0; i < MEM_DEPTH; i = i + 1)

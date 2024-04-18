@@ -56,7 +56,7 @@ module cpu(input reset,       // positive reset signal
   wire [31:0] mux_forwardA_out;
   wire [31:0] mux_forwardB_out;
   wire [31:0] mux_forward_out;
-  wire forward17;
+  wire [1:0] forward17;
   
 
   /***** alu control *****/
@@ -89,6 +89,7 @@ module cpu(input reset,       // positive reset signal
   //추가
   reg [4:0] ID_EX_rs1;
   reg [4:0] ID_EX_rs2;
+  reg [31:0] ID_EX_inst;
 
   /***** EX/MEM pipeline registers *****/
   // From the control unit
@@ -116,9 +117,15 @@ module cpu(input reset,       // positive reset signal
   reg ID_EX_is_halted;
   reg EX_MEM_is_halted;
   reg MEM_WB_is_halted;
+  reg halt_signal;
 
   assign halted_check = ((mux_forward_out == 10) && is_ecall) ? 1 : 0;
-  assign is_halted = MEM_WB_is_halted;
+
+  assign is_halted = halt_signal;
+
+  always @(posedge clk) begin
+    halt_signal <= MEM_WB_is_halted;
+  end
 
   // ---------- Update program counter ----------
   // PC must be updated on the rising edge (positive edge) of the clock.
@@ -146,8 +153,8 @@ module cpu(input reset,       // positive reset signal
     else begin
       if(IFIDwrite == 1) begin
         IF_ID_inst <= inst;
-        $display("%x", IF_ID_inst);
       end
+      $display("%x", IF_ID_inst);
     end
   end
 
@@ -157,7 +164,7 @@ module cpu(input reset,       // positive reset signal
     .clk (clk),          // input
     .rs1 (mux_isEcall_out[4:0]),          // input
     .rs2 (IF_ID_inst[24:20]),          // input
-    .rd (IF_ID_inst[11:7]),           // input
+    .rd (MEM_WB_rd),           // input
     .rd_din (rd_din),       // input
     .write_enable (MEM_WB_reg_write),    // input
     .rs1_dout (rs1_dout),     // output
@@ -203,10 +210,12 @@ module cpu(input reset,       // positive reset signal
       ID_EX_rs1 <= 0;
       ID_EX_rs2 <= 0;      
       ID_EX_is_halted <= 0;
+      ID_EX_inst <= 0;
     end
     else begin
       // From others 
-      ID_EX_rs1_data <= rs1_dout;
+      ID_EX_inst <= IF_ID_inst;
+      ID_EX_rs1_data <= mux_forward_out;
       ID_EX_rs2_data <= rs2_dout;
       ID_EX_imm <= imm_gen_out;
       ID_EX_ALU_ctrl_unit_input <= IF_ID_inst;
@@ -214,6 +223,8 @@ module cpu(input reset,       // positive reset signal
       ID_EX_rs1 <= IF_ID_inst[19:15];
       ID_EX_rs2 <= IF_ID_inst[24:20];
       ID_EX_is_halted <= halted_check;
+      $display("rs1: x%d, rs2: x%d, rd: x%d", ID_EX_rs1, ID_EX_rs2, ID_EX_rd);
+      //$display("mux result : 0x%x", mux_isEcall_out[4:0]);
 
       if(hazardout == 1) begin 
         ID_EX_alu_op <= 0;        
@@ -236,8 +247,8 @@ module cpu(input reset,       // positive reset signal
 
   // ---------- ALU Control Unit ----------
   ALUControlUnit alu_ctrl_unit (
-    .part_of_inst(inst[31:0]),  // input
-    .alu_op(ALUOp),      // input
+    .part_of_inst(ID_EX_inst),  // input
+    .alu_op(ID_EX_alu_op),      // input
     .alu_control_lines(alu_control_lines) // output
   );
 
@@ -275,6 +286,8 @@ module cpu(input reset,       // positive reset signal
       EX_MEM_dmem_data <= mux_forwardB_out;
       EX_MEM_rd <= ID_EX_rd;
       EX_MEM_is_halted <= ID_EX_is_halted;
+
+
     end
   end
 
@@ -284,8 +297,8 @@ module cpu(input reset,       // positive reset signal
     .clk (clk),        // input
     .addr (EX_MEM_alu_out),       // input
     .din (EX_MEM_dmem_data),        // input
-    .mem_read (MemRead),   // input
-    .mem_write (MemWrite),  // input
+    .mem_read (EX_MEM_mem_read),   // input
+    .mem_write (EX_MEM_mem_write),  // input
     .dout (ReadData)        // output
   );
 
@@ -315,6 +328,7 @@ module cpu(input reset,       // positive reset signal
     .input_2(IF_ID_inst[24:20]), //rs2
     .input_3(ID_EX_rd), //rd
     .input_4(ID_EX_mem_read), 
+    .isecall_op(ID_EX_inst[6:0]),
     .opcode(IF_ID_inst[6:0]),
     .output_1(PCwrite), 
     .output_2(IFIDwrite),
@@ -338,7 +352,7 @@ module cpu(input reset,       // positive reset signal
     .EX_RegWrite(ID_EX_reg_write),
     .MEM_RegWrite(EX_MEM_reg_write),
     .control(forward17)
-  )
+  );
 
   Adder Adder(
     .input_1(current_pc),
@@ -347,8 +361,8 @@ module cpu(input reset,       // positive reset signal
   );
 
   mux_2x1 mux_2x1_isEcall(
-    .input_1(17),           // input
-    .input_2({27'b0, IF_ID_inst[19:15]}),           // input
+    .input_1({27'b0, IF_ID_inst[19:15]}),           // input
+    .input_2(17),           // input
     .control(is_ecall),              // input
     .mux_out(mux_isEcall_out)               // output
   );
@@ -362,8 +376,8 @@ module cpu(input reset,       // positive reset signal
 
   mux_2x1 mux_2x1_ALUSrc(
     .input_1(mux_forwardB_out),           // input
-    .input_2(imm_gen_out),           // input
-    .control(ALUSrc),              // input
+    .input_2(ID_EX_imm),           // input
+    .control(ID_EX_alu_src),              // input
     .mux_out(alu_in_2)               // output
   );
 
@@ -398,7 +412,16 @@ module cpu(input reset,       // positive reset signal
     .input_3(ReadData),
     .input_4(0),
     .control(forward17),              // input
-    .mux_out(mux_forward_out)               // output
+    .mux_out(mux_forward_out)             // output
   );
 
+/*
+  always @(*) begin
+    if (forward17 != 2'b00) begin
+      $display("foward17: %d", forward17);
+      $display("Hello, %d", mux_forward_out);
+    end
+  end
+
+*/
 endmodule

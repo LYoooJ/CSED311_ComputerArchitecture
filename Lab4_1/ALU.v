@@ -34,6 +34,7 @@ always @(*) begin
         end
         `ADD: begin
             alu_result = alu_in_1 + alu_in_2;
+            //$display("ADD");
         end
         `SUB: begin
             alu_result = alu_in_1 - alu_in_2;
@@ -57,5 +58,6 @@ always @(*) begin
             alu_result = 0;
         end
     endcase
+    $display("alu_in1: 0x%x, alu_in2: 0x%x, alu_result: 0x%x\n", alu_in_1, alu_in_2, alu_result);
 end
 endmodule

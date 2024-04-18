@@ -6,9 +6,10 @@ module HazardDetection (
   input [4:0] input_3, // EX_rd
   input input_4, // ID_EX_mem_read
   input [6:0] opcode, 
+  input [6:0] isecall_op,
   output reg output_1, //PCWrite
   output reg output_2, //IFIDWrite
-  output reg output_3 //IDEXWrite
+  output reg output_3 //hazardout
 );
 
 reg use_rs1;
@@ -35,6 +36,11 @@ always @(*) begin
         output_1 = 0;
         output_2 = 0;
         output_3 = 1;
+    end
+    else if(isecall_op == `ECALL) begin
+        output_1 =0;
+        output_2 =0;
+        output_3 =1;
     end
 end
 endmodule
