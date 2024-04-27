@@ -3,9 +3,11 @@
 module HazardDetection (input [4:0] ID_rs1, 
                         input [4:0] ID_rs2,
                         input [4:0] EX_rd, 
-                        input ID_EX_mem_read, 
+                        input [4:0] MEM_rd,
+                        input EX_mem_read, 
+                        input EX_reg_write,
+                        input MEM_mem_read,
                         input [6:0] ID_opcode, 
-                        input [6:0] EX_opcode,
                         output reg PCWrite, 
                         output reg IF_ID_write, 
                         output reg is_hazard);
@@ -30,15 +32,24 @@ always @(*) begin
     IF_ID_write = 1;
     is_hazard = 0;
 
-    if((((ID_rs1 == EX_rd) && use_rs1 == 1)||((ID_rs2 == EX_rd) && use_rs2 == 1)) && (ID_EX_mem_read == 1'b1)) begin
-        PCWrite = 0;
-        IF_ID_write = 0;
-        is_hazard = 1;
+    if (ID_opcode == `ECALL) begin
+        if (EX_rd == 17 && EX_reg_write == 1) begin
+            PCWrite = 0;
+            IF_ID_write = 0;
+            is_hazard = 1;
+        end
+        else if (MEM_rd == 17 && MEM_mem_read == 1) begin
+            PCWrite = 0;
+            IF_ID_write = 0;
+            is_hazard = 1;        
+        end
     end
-    else if(EX_opcode == `ECALL) begin
-        PCWrite = 0;
-        IF_ID_write = 0;
-        is_hazard = 1;
+    else begin
+        if((((ID_rs1 == EX_rd) && use_rs1 == 1)||((ID_rs2 == EX_rd) && use_rs2 == 1)) && (EX_mem_read == 1'b1)) begin
+            PCWrite = 0;
+            IF_ID_write = 0;
+            is_hazard = 1;
+        end
     end
 end
 endmodule

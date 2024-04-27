@@ -120,13 +120,9 @@ module cpu(input reset,       // positive reset signal
   reg MEM_WB_is_halted;
   reg halt_signal;
 
-  assign halted_check = ((mux_forward_out == 10) && is_ecall) ? 1 : 0;
-  assign is_halted = halt_signal;
-
-  always @(posedge clk) begin
-    halt_signal <= MEM_WB_is_halted;
-  end
-
+  assign halted_check = ((mux_forward_out == 10) && is_ecall && !hazardout) ? 1 : 0;
+  assign is_halted = MEM_WB_is_halted;
+  
   // ---------- Update program counter ----------
   // PC must be updated on the rising edge (positive edge) of the clock.
   PC pc(
@@ -231,7 +227,7 @@ module cpu(input reset,       // positive reset signal
       end
       else begin 
         ID_EX_alu_op <= ALUOp;        
-        ID_EX_alu_src <=ALUSrc ;   
+        ID_EX_alu_src <= ALUSrc ;   
         ID_EX_mem_write <= MemWrite;     
         ID_EX_mem_read <= MemRead;     
         ID_EX_mem_to_reg <= MemtoReg;     
@@ -311,18 +307,22 @@ module cpu(input reset,       // positive reset signal
     end
   end
 
+  // ---------- Hazard Detection Unit ----------
   HazardDetection HazardDetection(
     .ID_rs1(IF_ID_inst[19:15]),       // input
     .ID_rs2(IF_ID_inst[24:20]),       // input
     .EX_rd(ID_EX_rd),                 // input
-    .ID_EX_mem_read(ID_EX_mem_read),  // input
+    .MEM_rd(EX_MEM_rd),               // input
+    .EX_mem_read(ID_EX_mem_read),     // input
+    .EX_reg_write(ID_EX_reg_write),   // input
+    .MEM_mem_read(EX_MEM_mem_read),   // input
     .ID_opcode(IF_ID_inst[6:0]),      // input
-    .EX_opcode(ID_EX_inst[6:0]),      // input
     .PCWrite(PCwrite),                // output
     .IF_ID_write(IFIDwrite),          // output
     .is_hazard(hazardout)             // output
   );
 
+  // ---------- Forwarding Unit ----------
   ForwardingUnit ForwardingUnit(
     .EX_rs1(ID_EX_rs1),               // input
     .EX_rs2(ID_EX_rs2),               // input
@@ -334,21 +334,24 @@ module cpu(input reset,       // positive reset signal
     .ForwardB(ForwardB)               // output
   );
 
+  // ---------- Ecall forwarding Unit ----------
   ecall_forward ecall_forward(
     .opcode(IF_ID_inst[6:0]),         // input
-    .EX_rd(ID_EX_rd),                 // input
     .MEM_rd(EX_MEM_rd),               // input
-    .EX_RegWrite(ID_EX_reg_write),    // input
+    .WB_rd(MEM_WB_rd),                // input
     .MEM_RegWrite(EX_MEM_reg_write),  // input
+    .WB_RegWrite(MEM_WB_reg_write),   // input
     .control(forward17)               // output
   );
 
+  // ---------- PC increment Adder ----------
   Adder Adder(
     .input_1(current_pc),             // input
     .input_2(4),                      // input
     .sum(next_pc)                     // output
   );
 
+  // ---------- isEcall Mux ----------
   mux_2x1 mux_2x1_isEcall(
     .input_1({27'b0, IF_ID_inst[19:15]}),   // input
     .input_2(17),                           // input
@@ -356,6 +359,7 @@ module cpu(input reset,       // positive reset signal
     .mux_out(mux_isEcall_out)               // output
   );
 
+  // ---------- MemtoReg Mux ----------
   mux_2x1 mux_2x1_MemtoReg(
     .input_1(MEM_WB_mem_to_reg_src_1),      // input
     .input_2(MEM_WB_mem_to_reg_src_2),      // input
@@ -363,6 +367,7 @@ module cpu(input reset,       // positive reset signal
     .mux_out(rd_din)                        // output
   );
 
+  // ---------- ALUSrc Mux ----------
   mux_2x1 mux_2x1_ALUSrc(
     .input_1(mux_forwardB_out),             // input
     .input_2(ID_EX_imm),                    // input
@@ -370,6 +375,7 @@ module cpu(input reset,       // positive reset signal
     .mux_out(alu_in_2)                      // output
   );
 
+  // ---------- Forward A Mux ----------
   mux_4x1 mux_4x1_A(
     .input_1(ID_EX_rs1_data),               // input
     .input_2(EX_MEM_alu_out),               // input
@@ -379,6 +385,7 @@ module cpu(input reset,       // positive reset signal
     .mux_out(alu_in_1)                      // output
   );
 
+  // ---------- Forward B Mux ----------
   mux_4x1 mux_4x1_B(
     .input_1(ID_EX_rs2_data),               // input
     .input_2(EX_MEM_alu_out),               // input
@@ -388,10 +395,11 @@ module cpu(input reset,       // positive reset signal
     .mux_out(mux_forwardB_out)              // output
   );
 
+  // ---------- Forward 17 Mux ----------
     mux_4x1 mux_4x1_forward(
     .input_1(rs1_dout),                     // input
-    .input_2(alu_result),                   // input
-    .input_3(ReadData),                     // input
+    .input_2(EX_MEM_alu_out),                   // input
+    .input_3(rd_din),                     // input
     .input_4(0),                            // input    
     .control(forward17),                    // input
     .mux_out(mux_forward_out)               // output
