@@ -69,6 +69,9 @@ module cpu(input reset,       // positive reset signal
   /***** Halt *****/
   wire halted_check;
 
+  /**** Gshare ****/
+
+
   /***** Register declarations *****/
   // You need to modify the width of registers
   // In addition, 
@@ -404,5 +407,13 @@ module cpu(input reset,       // positive reset signal
     .control(forward17),                    // input
     .mux_out(mux_forward_out)               // output
   );
+
+  //---------- Gshare ----------
+  Gshare gshare(
+    .reset(reset),
+    .clk(clk), 
+    .current_pc(current_pc),
+    .next_pc(next_pc)
+);
 
 endmodule
