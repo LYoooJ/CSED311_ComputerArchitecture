@@ -9,6 +9,8 @@ module Gshare(input reset,
               input current_pc,
               output reg next_pc);
 
+// JAL, JALR 처리??
+
 reg [31:0] taken;
 reg [31:0] counter_update;
 reg [31:0] prediction;
@@ -29,7 +31,7 @@ assign tag = current_pc[31:7];
 assign btb_index = current_pc[6:2];
 assign pht_index = bhsr ^ btb_index;
 assign branch_target = btb[btb_index];
-assign pht_prediction = prediction[pht_index];
+assign pht_prediction = (is_jal || is_jalr) ? 1'b1 : prediction[pht_index]; // ??
 assign taken = pht_prediction && (tag == tag_table[btb_index]);
 
 // ***** generate pattern history table *****
