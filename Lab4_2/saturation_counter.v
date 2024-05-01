@@ -1,6 +1,6 @@
 module saturation_counter (input reset,
                            input clk,
-                           input is_control_inst,
+                           input counter_update,
                            input actual_taken,
                            output reg prediction);
 
@@ -10,7 +10,7 @@ always @(posedge clk) begin
     if (reset) begin
         stated = 2'b00;
     end else begin
-        if (is_control_inst) begin
+        if (counter_update) begin
             if (actual_taken) begin
                 if (state != 2'b11) begin
                     state -= 1;
