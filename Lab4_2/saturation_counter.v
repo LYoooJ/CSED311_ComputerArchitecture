@@ -15,13 +15,22 @@ always @(posedge clk) begin
                 if (state != 2'b11) begin
                     state -= 1;
                 end 
-            end else begin
-                    if (state != 2'b00) begin
-                        state += 1;
-                    end
+            end 
+            else begin
+                if (state != 2'b00) begin
+                    state += 1;
+                end
             end
         end
     end
 end
 
+always @(*) begin
+    if (state == 2'b00 || state == 2'b01) begin
+        prediction = 0;
+    end 
+    else begin
+        prediction = 1;
+    end
+end
 endmodule
