@@ -467,7 +467,7 @@ module cpu(input reset,       // positive reset signal
     .is_jalr(ID_EX_is_jalr),
     .actual_branch_target(real_pc_target),
     .actual_taken(taken),
-    .prediction_correct(),
+    .prediction_correct(prediction_correct),
     .current_pc(current_pc),
     .next_pc(next_pc),
 );
