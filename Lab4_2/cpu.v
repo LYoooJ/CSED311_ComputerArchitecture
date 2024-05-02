@@ -84,7 +84,7 @@ module cpu(input reset,       // positive reset signal
 
 
   // Control flow instruction이면서 pc 예측이 맞을 때
-  assign prediction_correct = (real_pc_target == ID_EX_next_pc) && (ID_EX_is_branch || ID_EX_is_jal || ID_EX_is_jalr);
+  assign prediction_correct = ((real_pc_target == ID_EX_next_pc) && (ID_EX_is_branch || ID_EX_is_jal || ID_EX_is_jalr)) || (!ID_EX_is_branch && !ID_EX_is_jal && !ID_EX_is_jalr);
 
   /***** Register declarations *****/
   // You need to modify the width of registers
@@ -290,7 +290,8 @@ module cpu(input reset,       // positive reset signal
         ID_EX_mem_write <= 0;     
         ID_EX_mem_read <= 0;     
         ID_EX_mem_to_reg <= 0;     
-        ID_EX_reg_write <= 0;  
+        ID_EX_reg_write <= 0; 
+        $display("flush!"); 
       end
       else begin 
         ID_EX_alu_op <= ALUOp;        
