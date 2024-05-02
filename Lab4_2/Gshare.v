@@ -78,19 +78,28 @@ always @(posedge clk) begin
             end
             bhsr <= {bhsr[3:0], actual_taken};
         end
-        if (is_jal || is_jalr) begin // JAL or JALR ???
-            btb[btb_index] <= actual_branch_target;
-            tag_table[btb_index] <= tag;        
+        else begin
+            if (is_jal || is_jalr) begin // JAL or JALR ???
+                btb[btb_index] <= actual_branch_target;
+                tag_table[btb_index] <= tag;        
+            end
         end
     end
 end
 
 // ***** next pc Mux *****
 mux_2x1 next_pc_mux(
-    .input_1(branch_target),
-    .input_2(current_pc + 4),
+    .input_1(current_pc + 4),
+    .input_2(branch_target),
     .control(gshare_taken),
     .mux_out(next_pc)
 );
+
+// always @(posedge clk) begin
+//     $display("branch_target: 0x%x", branch_target);
+//     $display("current_tc: 0x%x", current_pc + 4);
+//     $display("gshare taken: %d", gshare_taken);
+//     $display("next_pc: 0x%x", next_pc);
+// end
 
 endmodule

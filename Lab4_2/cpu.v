@@ -92,8 +92,7 @@ module cpu(input reset,       // positive reset signal
   // 1. You might need other pipeline registers that are not described below
   // 2. You might not need registers described below
   /***** IF/ID pipeline registers *****/
-  reg [31:0] IF_ID_inst;           // will be used in ID stage
-  
+  reg [31:0] IF_ID_inst;
   reg [31:0] IF_ID_pc;
   reg [31:0] IF_ID_next_pc;
   reg IF_ID_flush;
@@ -122,32 +121,30 @@ module cpu(input reset,       // positive reset signal
   reg [4:0] ID_EX_rs1;
   reg [4:0] ID_EX_rs2;
   reg [31:0] ID_EX_inst;
+  reg ID_EX_is_halted;
 
   /***** EX/MEM pipeline registers *****/
   // From the control unit
   reg EX_MEM_mem_write;     // will be used in MEM stage
   reg EX_MEM_mem_read;      // will be used in MEM stage
-  //reg EX_MEM_is_branch;     // will be used in MEM stage
   reg EX_MEM_mem_to_reg;    // will be used in WB stage
   reg EX_MEM_reg_write;     // will be used in WB stage
   // From others
   reg [31:0] EX_MEM_alu_out;
   reg [31:0] EX_MEM_dmem_data;
   reg [4:0] EX_MEM_rd;
+  reg EX_MEM_is_halted;
 
   /***** MEM/WB pipeline registers *****/
   // From the control unit
   reg MEM_WB_mem_to_reg;    // will be used in WB stage
   reg MEM_WB_reg_write;     // will be used in WB stage
+  reg MEM_WB_is_halted;
   // From others
   reg [31:0] MEM_WB_mem_to_reg_src_1;
   reg [31:0] MEM_WB_mem_to_reg_src_2;
   reg [4:0] MEM_WB_rd;
-  
-  reg ID_EX_is_halted;
-  reg EX_MEM_is_halted;
-  reg MEM_WB_is_halted;
-  reg halt_signal;
+
 
   assign halted_check = ((mux_forward_out == 10) && is_ecall && !hazardout) ? 1 : 0;
   assign is_halted = MEM_WB_is_halted;
@@ -160,6 +157,20 @@ module cpu(input reset,       // positive reset signal
     .PCwrite(PCwrite),        // input
     .next_pc(next_pc),        // input
     .current_pc(current_pc)   // output
+  );
+
+  // ---------- Gshare ----------
+  Gshare gshare(
+    .reset(reset),
+    .clk(clk),
+    .is_branch(ID_EX_is_branch),
+    .is_jal(ID_EX_is_jal),
+    .is_jalr(ID_EX_is_jalr),
+    .actual_branch_target(real_pc_target),
+    .actual_taken(taken),
+    .prediction_correct(prediction_correct),
+    .current_pc(current_pc),
+    .next_pc(next_pc)
   );
   
   // ---------- Instruction Memory ----------
@@ -183,6 +194,7 @@ module cpu(input reset,       // positive reset signal
         IF_ID_inst <= inst;
         IF_ID_pc <= current_pc;
         IF_ID_next_pc <= next_pc;
+        $display("0x%x", IF_ID_inst);
         if (!prediction_correct) begin
           IF_ID_flush <= 1;
         end
@@ -217,11 +229,11 @@ module cpu(input reset,       // positive reset signal
     .alu_src(ALUSrc),                   // output
     .write_enable(RegWrite),            // output
     .alu_op(ALUOp),                     // output
-    .is_ecall(is_ecall),                 // output (ecall inst)
-    .is_jal(is_jal),
-    .is_jalr(is_jalr),
-    .branch(branch),
-    .pc_to_reg(pc_to_reg)
+    .is_ecall(is_ecall),                // output (ecall inst)
+    .is_jal(is_jal),                    // output
+    .is_jalr(is_jalr),                  // output
+    .branch(branch),                    // output
+    .pc_to_reg(pc_to_reg)               // output
   );
 
   // ---------- Immediate Generator ----------
@@ -234,11 +246,11 @@ module cpu(input reset,       // positive reset signal
   always @(posedge clk) begin
     if (reset) begin
       ID_EX_alu_op <= 0;        
-      ID_EX_alu_src <= 0;    // will be used in EX stage
-      ID_EX_mem_write <= 0;     // will be used in MEM stage
-      ID_EX_mem_read <= 0;     // will be used in MEM stage
-      ID_EX_mem_to_reg <= 0;     // will be used in WB stage
-      ID_EX_reg_write <= 0;     // will be used in WB stage
+      ID_EX_alu_src <= 0;   
+      ID_EX_mem_write <= 0;   
+      ID_EX_mem_read <= 0;    
+      ID_EX_mem_to_reg <= 0;    
+      ID_EX_reg_write <= 0;    
       ID_EX_rs1_data <= 0;
       ID_EX_rs2_data <= 0;
       ID_EX_imm <= 0;
@@ -248,7 +260,6 @@ module cpu(input reset,       // positive reset signal
       ID_EX_rs2 <= 0;      
       ID_EX_is_halted <= 0;
       ID_EX_inst <= 0;
-      /*****************************추가****************/
       ID_EX_is_branch <= 0;
       ID_EX_is_jal <= 0;
       ID_EX_is_jalr <= 0;
@@ -266,7 +277,6 @@ module cpu(input reset,       // positive reset signal
       ID_EX_rs1 <= IF_ID_inst[19:15];
       ID_EX_rs2 <= IF_ID_inst[24:20];
       ID_EX_is_halted <= halted_check;
-      /*****************************추가****************/
       ID_EX_is_branch <= branch;
       ID_EX_is_jal <= is_jal;
       ID_EX_is_jalr <= is_jalr;
@@ -313,8 +323,7 @@ module cpu(input reset,       // positive reset signal
   always @(posedge clk) begin
     if (reset) begin
       EX_MEM_mem_write <= 0;     
-      EX_MEM_mem_read <= 0;      
-      //EX_MEM_is_branch <= 0;     
+      EX_MEM_mem_read <= 0;        
       EX_MEM_mem_to_reg <= 0;    
       EX_MEM_alu_out <= 0;
       EX_MEM_dmem_data <= 0;
@@ -401,13 +410,6 @@ module cpu(input reset,       // positive reset signal
     .control(forward17)               // output
   );
 
-  // // ---------- PC increment Adder ----------
-  // Adder Adder(
-  //   .input_1(current_pc),             // input
-  //   .input_2(4),                      // input
-  //   .sum(next_pc)                     // output
-  // );
-
   // ---------- isEcall Mux ----------
   mux_2x1 mux_2x1_isEcall(
     .input_1({27'b0, IF_ID_inst[19:15]}),   // input
@@ -455,39 +457,26 @@ module cpu(input reset,       // positive reset signal
   // ---------- Forward 17 Mux ----------
     mux_4x1 mux_4x1_forward(
     .input_1(rs1_dout),                     // input
-    .input_2(EX_MEM_alu_out),                   // input
-    .input_3(rd_din),                     // input
+    .input_2(EX_MEM_alu_out),               // input
+    .input_3(rd_din),                       // input
     .input_4(0),                            // input    
     .control(forward17),                    // input
     .mux_out(mux_forward_out)               // output
   );
 
-  // ---------- Gshare ----------
-  Gshare gshare(
-    .reset(reset),
-    .clk(clk),
-    .is_branch(ID_EX_is_branch),
-    .is_jal(ID_EX_is_jal),
-    .is_jalr(ID_EX_is_jalr),
-    .actual_branch_target(real_pc_target),
-    .actual_taken(taken),
-    .prediction_correct(prediction_correct),
-    .current_pc(current_pc),
-    .next_pc(next_pc)
-  );
-
 // ---------- branch target Adder ----------
 Adder branch_target_adder(
-  .input_1(ID_EX_pc),
-  .input_2(ID_EX_imm),
-  .sum(branch_target)
+  .input_1(ID_EX_pc),                       // input
+  .input_2(ID_EX_imm),                      // input
+  .sum(branch_target)                       // output
 );
 
+// ---------- target pc Mux ----------
 mux_2x1 target_pc_mux(
-  .input_1(branch_target),
-  .input_2(alu_result),
-  .control(ID_EX_is_jalr),
-  .mux_out(real_pc_target)
+  .input_1(branch_target),                  // input
+  .input_2(alu_result),                     // input
+  .control(ID_EX_is_jalr),                  // input
+  .mux_out(real_pc_target)                  // output
 );
 
 endmodule
