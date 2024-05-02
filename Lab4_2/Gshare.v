@@ -7,6 +7,7 @@ module Gshare(input reset,
               input actual_taken,
               input prediction_correct,
               input [31:0] current_pc,
+              input [31:0] ID_EX_pc,
               output reg [31:0] next_pc);
 
 // JAL, JALR 처리??
@@ -63,8 +64,9 @@ always @(posedge clk) begin
     else begin
         if (is_branch) begin // branch
             if (!prediction_correct) begin
-                btb[btb_index] <= actual_branch_target;
-                tag_table[btb_index] <= tag;
+                btb[ID_EX_pc[6:2]] <= actual_branch_target;
+                $display("[0x%x] btb[%d]: 0x%x", ID_EX_pc, ID_EX_pc[6:2], actual_branch_target);
+                tag_table[ID_EX_pc[6:2]] <= tag;
             end
             for (k = 0; k < 32; k = k + 1) begin
                 if (k == {27'b0, pht_index}) begin
@@ -80,8 +82,8 @@ always @(posedge clk) begin
         end
         else begin
             if (is_jal || is_jalr) begin // JAL or JALR ???
-                btb[btb_index] <= actual_branch_target;
-                tag_table[btb_index] <= tag;        
+                btb[ID_EX_pc[6:2]] <= actual_branch_target;
+                tag_table[ID_EX_pc[6:2]] <= tag;        
             end
         end
     end
@@ -95,11 +97,15 @@ mux_2x1 next_pc_mux(
     .mux_out(next_pc)
 );
 
-// always @(posedge clk) begin
-//     $display("branch_target: 0x%x", branch_target);
-//     $display("current_tc: 0x%x", current_pc + 4);
-//     $display("gshare taken: %d", gshare_taken);
-//     $display("next_pc: 0x%x", next_pc);
-// end
+always @(*) begin
+    //(tag == tag_table[btb_index]);
+    if (gshare_taken) begin
+        $display("current_pc: 0x%x", current_pc);
+        $display("branch_target: 0x%x", branch_target);
+        $display("pht prediction: %d", pht_prediction);
+        $display("tag: 0x%x", tag);
+        $display("tag table[%d]: 0x%x", btb_index, tag_table[btb_index]);
+    end
+end
 
 endmodule

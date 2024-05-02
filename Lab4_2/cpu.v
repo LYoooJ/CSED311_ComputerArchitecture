@@ -75,7 +75,7 @@ module cpu(input reset,       // positive reset signal
 
   /**** Gshare ****/
   wire taken;
-  assign taken = ID_EX_is_jal || ID_EX_is_jalr ||(alu_bcond & ID_EX_is_branch);
+  assign taken = ID_EX_is_jal || ID_EX_is_jalr || (alu_bcond & ID_EX_is_branch);
 
   wire [31:0] branch_target;
   wire [31:0] real_pc_target;
@@ -83,9 +83,25 @@ module cpu(input reset,       // positive reset signal
 
 
 
-  // Control flow instruction이면서 pc 예측이 맞을 때
+  // Control flow instruction이면서 pc 예측이 맞을 때 || non-control flow 일 때
   assign prediction_correct = ((real_pc_target == ID_EX_next_pc) && (ID_EX_is_branch || ID_EX_is_jal || ID_EX_is_jalr)) || (!ID_EX_is_branch && !ID_EX_is_jal && !ID_EX_is_jalr);
-
+  always @(posedge clk) begin
+    // $display("real_pc_target: 0x%x", real_pc_target);
+    // $display("ID_EX_next_pc: 0x%x", ID_EX_next_pc);
+    if (prediction_correct == 0) begin
+      $display("----- MISPREDICTION -----");
+      $display("real_pc_target: 0x%x", real_pc_target);
+      $display("ID_EX_next_pc: 0x%x", ID_EX_next_pc);
+      $display("-------------------------");
+    end 
+    // else begin
+    //   $display("is_branch: %d", ID_EX_is_branch);
+    //   $display("is_jal: %d", ID_EX_is_jal);
+    //   $display("is_jalr: %d", ID_EX_is_jalr);
+    //   $display("real_pc_target: 0x%x", real_pc_target);
+    //   $display("ID_EX_next_pc: 0x%x", ID_EX_next_pc);
+    // end
+  end
   /***** Register declarations *****/
   // You need to modify the width of registers
   // In addition, 
@@ -170,7 +186,8 @@ module cpu(input reset,       // positive reset signal
     .actual_taken(taken),
     .prediction_correct(prediction_correct),
     .current_pc(current_pc),
-    .next_pc(next_pc)
+    .ID_EX_pc(ID_EX_pc),
+    .next_pc(btb_next_pc)
   );
   
   // ---------- Instruction Memory ----------
@@ -194,7 +211,7 @@ module cpu(input reset,       // positive reset signal
         IF_ID_inst <= inst;
         IF_ID_pc <= current_pc;
         IF_ID_next_pc <= next_pc;
-        $display("0x%x", IF_ID_inst);
+        $display("[0x%x]: 0x%x", IF_ID_pc, IF_ID_inst);
         if (!prediction_correct) begin
           IF_ID_flush <= 1;
         end
@@ -276,22 +293,34 @@ module cpu(input reset,       // positive reset signal
       ID_EX_rd <= IF_ID_inst[11:7];
       ID_EX_rs1 <= IF_ID_inst[19:15];
       ID_EX_rs2 <= IF_ID_inst[24:20];
-      ID_EX_is_halted <= halted_check;
-      ID_EX_is_branch <= branch;
-      ID_EX_is_jal <= is_jal;
-      ID_EX_is_jalr <= is_jalr;
       ID_EX_pc <= IF_ID_pc;
       ID_EX_next_pc <= IF_ID_next_pc;
 
       // 1. hazard가 detect 되었을 때 ID stage, 2. EX stage에서 예측이 틀렸음을 알았을 때 ID stage, 3. IF_ID flush == 1인 명령어가 ID stage
-      if(hazardout == 1 || prediction_correct == 0 || IF_ID_flush == 1) begin 
+      if(hazardout == 1) begin 
         ID_EX_alu_op <= 0;        
         ID_EX_alu_src <= 0;   
         ID_EX_mem_write <= 0;     
         ID_EX_mem_read <= 0;     
         ID_EX_mem_to_reg <= 0;     
         ID_EX_reg_write <= 0; 
-        $display("flush!"); 
+        ID_EX_is_halted <= 0;
+        ID_EX_is_branch <= 0;
+        ID_EX_is_jal <= 0;
+        ID_EX_is_jalr <= 0;
+      end
+      else if (prediction_correct == 0 || IF_ID_flush == 1) begin
+        ID_EX_alu_op <= 0;        
+        ID_EX_alu_src <= 0;   
+        ID_EX_mem_write <= 0;     
+        ID_EX_mem_read <= 0;     
+        ID_EX_mem_to_reg <= 0;     
+        ID_EX_reg_write <= 0; 
+        ID_EX_is_halted <= 0;
+        ID_EX_is_branch <= 0;
+        ID_EX_is_jal <= 0;
+        ID_EX_is_jalr <= 0;
+        $display("flush!");
       end
       else begin 
         ID_EX_alu_op <= ALUOp;        
@@ -299,7 +328,11 @@ module cpu(input reset,       // positive reset signal
         ID_EX_mem_write <= MemWrite;     
         ID_EX_mem_read <= MemRead;     
         ID_EX_mem_to_reg <= MemtoReg;     
-        ID_EX_reg_write <= RegWrite;     
+        ID_EX_reg_write <= RegWrite;   
+        ID_EX_is_halted <= halted_check;
+        ID_EX_is_branch <= branch;
+        ID_EX_is_jal <= is_jal;
+        ID_EX_is_jalr <= is_jalr;  
       end
     end
   end
@@ -472,12 +505,43 @@ Adder branch_target_adder(
   .sum(branch_target)                       // output
 );
 
+// ---------- PC increment Adder ----------
+Adder pc_increment_adder(
+  .input_1(ID_EX_pc),
+  .input_2(4),
+  .sum(increment_pc)
+);
+
+wire [31:0] increment_pc;
+wire [31:0] pcSrc1_mux_out;
+wire pcSrc1;
+
+assign pcSrc1 = (ID_EX_is_branch && alu_bcond) || ID_EX_is_jal;
+
+// ---------- pcSrc1 Adder ----------
+mux_2x1 pcSrc1_mux(
+  .input_1(increment_pc),
+  .input_2(branch_target),
+  .control(pcSrc1),
+  .mux_out(pcSrc1_mux_out)
+);
+
 // ---------- target pc Mux ----------
 mux_2x1 target_pc_mux(
-  .input_1(branch_target),                  // input
+  .input_1(pcSrc1_mux_out),                  // input
   .input_2(alu_result),                     // input
   .control(ID_EX_is_jalr),                  // input
   .mux_out(real_pc_target)                  // output
+);
+
+wire [31:0] btb_next_pc;
+
+// ---------- next_pc Mux ----------
+mux_2x1 mux(
+  .input_1(real_pc_target),
+  .input_2(btb_next_pc),
+  .control(prediction_correct),
+  .mux_out(next_pc)
 );
 
 endmodule
