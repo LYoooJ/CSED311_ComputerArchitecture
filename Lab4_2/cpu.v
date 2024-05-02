@@ -70,6 +70,8 @@ module cpu(input reset,       // positive reset signal
   wire halted_check;
 
   /**** Gshare ****/
+  wire taken;
+  assign taken = alu_bcond & ID_EX_is_branch;
 
 
   /***** Register declarations *****/
@@ -87,6 +89,9 @@ module cpu(input reset,       // positive reset signal
   reg ID_EX_mem_read;       // will be used in MEM stage
   reg ID_EX_mem_to_reg;     // will be used in WB stage
   reg ID_EX_reg_write;      // will be used in WB stage
+  //추가
+  reg ID_EX_is_branch;
+
   // From others
   reg [31:0] ID_EX_rs1_data;
   reg [31:0] ID_EX_rs2_data;
@@ -101,7 +106,7 @@ module cpu(input reset,       // positive reset signal
   // From the control unit
   reg EX_MEM_mem_write;     // will be used in MEM stage
   reg EX_MEM_mem_read;      // will be used in MEM stage
-  reg EX_MEM_is_branch;     // will be used in MEM stage
+  //reg EX_MEM_is_branch;     // will be used in MEM stage
   reg EX_MEM_mem_to_reg;    // will be used in WB stage
   reg EX_MEM_reg_write;     // will be used in WB stage
   // From others
@@ -180,7 +185,11 @@ module cpu(input reset,       // positive reset signal
     .alu_src(ALUSrc),                   // output
     .write_enable(RegWrite),            // output
     .alu_op(ALUOp),                     // output
-    .is_ecall(is_ecall)                 // output (ecall inst)
+    .is_ecall(is_ecall),                 // output (ecall inst)
+    .is_jal(is_jal),
+    .is_jalr(is_jalr),
+    .branch(branch),
+    .pc_to_reg(pc_to_reg)
   );
 
   // ---------- Immediate Generator ----------
@@ -207,6 +216,8 @@ module cpu(input reset,       // positive reset signal
       ID_EX_rs2 <= 0;      
       ID_EX_is_halted <= 0;
       ID_EX_inst <= 0;
+      /*****************************추가****************/
+      ID_EX_is_branch <=0;
     end
     else begin
       // From others 
@@ -219,6 +230,8 @@ module cpu(input reset,       // positive reset signal
       ID_EX_rs1 <= IF_ID_inst[19:15];
       ID_EX_rs2 <= IF_ID_inst[24:20];
       ID_EX_is_halted <= halted_check;
+      /*****************************추가****************/
+      ID_EX_is_branch <=branch;
 
       if(hazardout == 1) begin 
         ID_EX_alu_op <= 0;        
@@ -260,7 +273,7 @@ module cpu(input reset,       // positive reset signal
     if (reset) begin
       EX_MEM_mem_write <= 0;     
       EX_MEM_mem_read <= 0;      
-      EX_MEM_is_branch <= 0;     
+      //EX_MEM_is_branch <= 0;     
       EX_MEM_mem_to_reg <= 0;    
       EX_MEM_alu_out <= 0;
       EX_MEM_dmem_data <= 0;
@@ -411,9 +424,15 @@ module cpu(input reset,       // positive reset signal
   //---------- Gshare ----------
   Gshare gshare(
     .reset(reset),
-    .clk(clk), 
+    .clk(clk),
+    .is_branch(),
+    .is_jal(is_jal),
+    .is_jalr(is_jalr),
+    .actual_branch_target(),
+    .actual_taken(),
+    .prediction_correct(),
     .current_pc(current_pc),
-    .next_pc(next_pc)
+    .next_pc(),
 );
 
 endmodule
