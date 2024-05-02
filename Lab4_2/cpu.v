@@ -38,6 +38,10 @@ module cpu(input reset,       // positive reset signal
   wire RegWrite;
   wire ALUSrc;
   wire is_ecall;
+  wire is_jal;
+  wire is_jalr;
+  wire branch;
+  wire pc_to_reg;
   wire [1:0] ALUOp;
 
   /***** hazard detection unit wire *****/
@@ -73,8 +77,8 @@ module cpu(input reset,       // positive reset signal
   wire taken;
   assign taken = ID_EX_is_jal || ID_EX_is_jalr ||(alu_bcond & ID_EX_is_branch);
 
-  wire branch_target;
-  wire real_pc_target;
+  wire [31:0] branch_target;
+  wire [31:0] real_pc_target;
   wire prediction_correct;
 
 
@@ -90,8 +94,8 @@ module cpu(input reset,       // positive reset signal
   /***** IF/ID pipeline registers *****/
   reg [31:0] IF_ID_inst;           // will be used in ID stage
   
-  reg IF_ID_pc;
-  reg IF_ID_next_pc;
+  reg [31:0] IF_ID_pc;
+  reg [31:0] IF_ID_next_pc;
   reg IF_ID_flush;
 
   /***** ID/EX pipeline registers *****/
@@ -106,8 +110,8 @@ module cpu(input reset,       // positive reset signal
   reg ID_EX_is_branch;
   reg ID_EX_is_jal;
   reg ID_EX_is_jalr;
-  reg ID_EX_pc;
-  reg ID_EX_next_pc;
+  reg [31:0] ID_EX_pc;
+  reg [31:0] ID_EX_next_pc;
 
   // From others
   reg [31:0] ID_EX_rs1_data;
@@ -469,8 +473,8 @@ module cpu(input reset,       // positive reset signal
     .actual_taken(taken),
     .prediction_correct(prediction_correct),
     .current_pc(current_pc),
-    .next_pc(next_pc),
-);
+    .next_pc(next_pc)
+  );
 
 // ---------- branch target Adder ----------
 Adder branch_target_adder(
