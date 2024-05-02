@@ -8,7 +8,7 @@ reg [2:0] state;
 
 always @(posedge clk) begin
     if (reset) begin
-        stated = 2'b00;
+        state = 2'b00;
     end else begin
         if (counter_update) begin
             if (actual_taken) begin

@@ -71,8 +71,16 @@ module cpu(input reset,       // positive reset signal
 
   /**** Gshare ****/
   wire taken;
-  assign taken = alu_bcond & ID_EX_is_branch;
+  assign taken = ID_EX_is_jal || ID_EX_is_jalr ||(alu_bcond & ID_EX_is_branch);
 
+  wire branch_target;
+  wire real_pc_target;
+  wire prediction_correct;
+
+
+
+  // Control flow instruction이면서 pc 예측이 맞을 때
+  assign prediction_correct = (real_pc_target == ID_EX_next_pc) && (ID_EX_is_branch || ID_EX_is_jal || ID_EX_is_jalr);
 
   /***** Register declarations *****/
   // You need to modify the width of registers
@@ -81,6 +89,11 @@ module cpu(input reset,       // positive reset signal
   // 2. You might not need registers described below
   /***** IF/ID pipeline registers *****/
   reg [31:0] IF_ID_inst;           // will be used in ID stage
+  
+  reg IF_ID_pc;
+  reg IF_ID_next_pc;
+  reg IF_ID_flush;
+
   /***** ID/EX pipeline registers *****/
   // From the control unit
   reg [1:0] ID_EX_alu_op;   // will be used in EX stage
@@ -91,6 +104,10 @@ module cpu(input reset,       // positive reset signal
   reg ID_EX_reg_write;      // will be used in WB stage
   //추가
   reg ID_EX_is_branch;
+  reg ID_EX_is_jal;
+  reg ID_EX_is_jalr;
+  reg ID_EX_pc;
+  reg ID_EX_next_pc;
 
   // From others
   reg [31:0] ID_EX_rs1_data;
@@ -153,10 +170,21 @@ module cpu(input reset,       // positive reset signal
   always @(posedge clk) begin
     if (reset) begin
       IF_ID_inst <= 32'b0;
+      IF_ID_pc <= 32'b0;
+      IF_ID_next_pc <= 32'b0;
+      IF_ID_flush <= 0;
     end
     else begin
       if(IFIDwrite == 1) begin
         IF_ID_inst <= inst;
+        IF_ID_pc <= current_pc;
+        IF_ID_next_pc <= next_pc;
+        if (!prediction_correct) begin
+          IF_ID_flush <= 1;
+        end
+        else begin
+          IF_ID_flush <= 0;
+        end
       end
     end
   end
@@ -217,7 +245,11 @@ module cpu(input reset,       // positive reset signal
       ID_EX_is_halted <= 0;
       ID_EX_inst <= 0;
       /*****************************추가****************/
-      ID_EX_is_branch <=0;
+      ID_EX_is_branch <= 0;
+      ID_EX_is_jal <= 0;
+      ID_EX_is_jalr <= 0;
+      ID_EX_pc <= 0;
+      ID_EX_next_pc <= 0;
     end
     else begin
       // From others 
@@ -231,9 +263,14 @@ module cpu(input reset,       // positive reset signal
       ID_EX_rs2 <= IF_ID_inst[24:20];
       ID_EX_is_halted <= halted_check;
       /*****************************추가****************/
-      ID_EX_is_branch <=branch;
+      ID_EX_is_branch <= branch;
+      ID_EX_is_jal <= is_jal;
+      ID_EX_is_jalr <= is_jalr;
+      ID_EX_pc <= IF_ID_pc;
+      ID_EX_next_pc <= IF_ID_next_pc;
 
-      if(hazardout == 1) begin 
+      // 1. hazard가 detect 되었을 때 ID stage, 2. EX stage에서 예측이 틀렸음을 알았을 때 ID stage, 3. IF_ID flush == 1인 명령어가 ID stage
+      if(hazardout == 1 || prediction_correct == 0 || IF_ID_flush == 1) begin 
         ID_EX_alu_op <= 0;        
         ID_EX_alu_src <= 0;   
         ID_EX_mem_write <= 0;     
@@ -243,7 +280,7 @@ module cpu(input reset,       // positive reset signal
       end
       else begin 
         ID_EX_alu_op <= ALUOp;        
-        ID_EX_alu_src <= ALUSrc ;   
+        ID_EX_alu_src <= ALUSrc;   
         ID_EX_mem_write <= MemWrite;     
         ID_EX_mem_read <= MemRead;     
         ID_EX_mem_to_reg <= MemtoReg;     
@@ -360,12 +397,12 @@ module cpu(input reset,       // positive reset signal
     .control(forward17)               // output
   );
 
-  // ---------- PC increment Adder ----------
-  Adder Adder(
-    .input_1(current_pc),             // input
-    .input_2(4),                      // input
-    .sum(next_pc)                     // output
-  );
+  // // ---------- PC increment Adder ----------
+  // Adder Adder(
+  //   .input_1(current_pc),             // input
+  //   .input_2(4),                      // input
+  //   .sum(next_pc)                     // output
+  // );
 
   // ---------- isEcall Mux ----------
   mux_2x1 mux_2x1_isEcall(
@@ -421,18 +458,32 @@ module cpu(input reset,       // positive reset signal
     .mux_out(mux_forward_out)               // output
   );
 
-  //---------- Gshare ----------
+  // ---------- Gshare ----------
   Gshare gshare(
     .reset(reset),
     .clk(clk),
-    .is_branch(),
-    .is_jal(is_jal),
-    .is_jalr(is_jalr),
-    .actual_branch_target(),
-    .actual_taken(),
+    .is_branch(ID_EX_is_branch),
+    .is_jal(ID_EX_is_jal),
+    .is_jalr(ID_EX_is_jalr),
+    .actual_branch_target(real_pc_target),
+    .actual_taken(taken),
     .prediction_correct(),
     .current_pc(current_pc),
-    .next_pc(),
+    .next_pc(next_pc),
+);
+
+// ---------- branch target Adder ----------
+Adder branch_target_adder(
+  .input_1(ID_EX_pc),
+  .input_2(ID_EX_imm),
+  .sum(branch_target)
+);
+
+mux_2x1 target_pc_mux(
+  .input_1(branch_target),
+  .input_2(alu_result),
+  .control(ID_EX_is_jalr),
+  .mux_out(real_pc_target)
 );
 
 endmodule
