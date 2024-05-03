@@ -19,10 +19,10 @@ always @(*) begin
     use_rs1 = 0;
     use_rs2 = 0;
     
-    if (ID_rs1 != 5'b0) begin
+    if (ID_opcode != `JAL && ID_rs1 != 5'b0) begin
         use_rs1 = 1;
     end
-    if ((ID_opcode == `ARITHMETIC || ID_opcode == `STORE) && ID_rs2 != 5'b0) begin
+    if ((ID_opcode == `ARITHMETIC || ID_opcode == `STORE || ID_opcode == `BRANCH) && ID_rs2 != 5'b0) begin
         use_rs2 = 1;
     end
 end
