@@ -65,7 +65,6 @@ always @(posedge clk) begin
         if (is_branch) begin // branch
             if (!prediction_correct) begin
                 btb[ID_EX_pc[6:2]] <= actual_branch_target;
-                $display("[0x%x] btb[%d]: 0x%x", ID_EX_pc, ID_EX_pc[6:2], actual_branch_target);
                 tag_table[ID_EX_pc[6:2]] <= tag;
             end
             for (k = 0; k < 32; k = k + 1) begin
@@ -79,10 +78,9 @@ always @(posedge clk) begin
                 end
             end
             bhsr <= {actual_taken, bhsr[4:1]};
-            // bhsr <= {bhsr[3:0], actual_taken};
         end
         else begin
-            if (is_jal || is_jalr) begin // JAL or JALR ???
+            if (is_jal || is_jalr) begin
                 btb[ID_EX_pc[6:2]] <= actual_branch_target;
                 tag_table[ID_EX_pc[6:2]] <= tag;        
             end
@@ -97,16 +95,5 @@ mux_2x1 next_pc_mux(
     .control(gshare_taken),
     .mux_out(next_pc)
 );
-
-always @(*) begin
-    //(tag == tag_table[btb_index]);
-    if (gshare_taken) begin
-        $display("current_pc: 0x%x", current_pc);
-        $display("branch_target: 0x%x", branch_target);
-        $display("pht prediction: %d", pht_prediction);
-        $display("tag: 0x%x", tag);
-        $display("tag table[%d]: 0x%x", btb_index, tag_table[btb_index]);
-    end
-end
 
 endmodule

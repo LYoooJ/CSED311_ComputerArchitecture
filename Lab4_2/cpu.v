@@ -85,23 +85,7 @@ module cpu(input reset,       // positive reset signal
 
   // Control flow instruction이면서 pc 예측이 맞을 때 || non-control flow 일 때
   assign prediction_correct = ((real_pc_target == ID_EX_next_pc) && (ID_EX_is_branch || ID_EX_is_jal || ID_EX_is_jalr)) || (!ID_EX_is_branch && !ID_EX_is_jal && !ID_EX_is_jalr);
-  always @(posedge clk) begin
-    // $display("real_pc_target: 0x%x", real_pc_target);
-    // $display("ID_EX_next_pc: 0x%x", ID_EX_next_pc);
-    if (prediction_correct == 0) begin
-      $display("----- MISPREDICTION -----");
-      $display("real_pc_target: 0x%x", real_pc_target);
-      $display("ID_EX_next_pc: 0x%x", ID_EX_next_pc);
-      $display("-------------------------");
-    end 
-    // else begin
-    //   $display("is_branch: %d", ID_EX_is_branch);
-    //   $display("is_jal: %d", ID_EX_is_jal);
-    //   $display("is_jalr: %d", ID_EX_is_jalr);
-    //   $display("real_pc_target: 0x%x", real_pc_target);
-    //   $display("ID_EX_next_pc: 0x%x", ID_EX_next_pc);
-    // end
-  end
+
   /***** Register declarations *****/
   // You need to modify the width of registers
   // In addition, 
@@ -140,6 +124,7 @@ module cpu(input reset,       // positive reset signal
   reg [31:0] ID_EX_inst;
   reg ID_EX_is_halted;
   reg [4:0] ID_EX_pht_index;
+  reg ID_EX_pc_to_reg;
 
   /***** EX/MEM pipeline registers *****/
   // From the control unit
@@ -152,12 +137,17 @@ module cpu(input reset,       // positive reset signal
   reg [31:0] EX_MEM_dmem_data;
   reg [4:0] EX_MEM_rd;
   reg EX_MEM_is_halted;
+  reg EX_MEM_pc_to_reg;
+  reg [31:0] EX_MEM_pc;
 
   /***** MEM/WB pipeline registers *****/
   // From the control unit
   reg MEM_WB_mem_to_reg;    // will be used in WB stage
   reg MEM_WB_reg_write;     // will be used in WB stage
   reg MEM_WB_is_halted;
+  reg MEM_WB_pc_to_reg;
+  reg [31:0] MEM_WB_pc;
+
   // From others
   reg [31:0] MEM_WB_mem_to_reg_src_1;
   reg [31:0] MEM_WB_mem_to_reg_src_2;
@@ -217,7 +207,7 @@ module cpu(input reset,       // positive reset signal
         IF_ID_pc <= current_pc;
         IF_ID_next_pc <= next_pc;
         IF_ID_pht_index <= accessed_pht_index;
-        $display("[0x%x]: 0x%x", IF_ID_pc, IF_ID_inst);
+        //$display("[0x%x]: 0x%x", IF_ID_pc, IF_ID_inst);
         if (!prediction_correct) begin
           IF_ID_flush <= 1;
         end
@@ -289,6 +279,7 @@ module cpu(input reset,       // positive reset signal
       ID_EX_pc <= 0;
       ID_EX_next_pc <= 0;
       ID_EX_pht_index <= 0;
+      ID_EX_pc_to_reg <= 0;
     end
     else begin
       // From others 
@@ -316,6 +307,7 @@ module cpu(input reset,       // positive reset signal
         ID_EX_is_branch <= 0;
         ID_EX_is_jal <= 0;
         ID_EX_is_jalr <= 0;
+        ID_EX_pc_to_reg <= 0;
       end
       else if (prediction_correct == 0 || IF_ID_flush == 1) begin
         ID_EX_alu_op <= 0;        
@@ -328,7 +320,8 @@ module cpu(input reset,       // positive reset signal
         ID_EX_is_branch <= 0;
         ID_EX_is_jal <= 0;
         ID_EX_is_jalr <= 0;
-        $display("flush!");
+        ID_EX_pc_to_reg <= 0;
+        //$display("flush!");
       end
       else begin 
         ID_EX_alu_op <= ALUOp;        
@@ -341,6 +334,7 @@ module cpu(input reset,       // positive reset signal
         ID_EX_is_branch <= branch;
         ID_EX_is_jal <= is_jal;
         ID_EX_is_jalr <= is_jalr;  
+        ID_EX_pc_to_reg <= pc_to_reg;
       end
     end
   end
@@ -371,6 +365,8 @@ module cpu(input reset,       // positive reset signal
       EX_MEM_dmem_data <= 0;
       EX_MEM_rd <= 0;
       EX_MEM_is_halted <= 0;
+      EX_MEM_pc_to_reg <= 0;
+      EX_MEM_pc <= 0;
     end
     else begin
       EX_MEM_mem_write <= ID_EX_mem_write;     
@@ -381,6 +377,8 @@ module cpu(input reset,       // positive reset signal
       EX_MEM_dmem_data <= mux_forwardB_out;
       EX_MEM_rd <= ID_EX_rd;
       EX_MEM_is_halted <= ID_EX_is_halted;
+      EX_MEM_pc_to_reg <= ID_EX_pc_to_reg;
+      EX_MEM_pc <= ID_EX_pc;
     end
   end
 
@@ -404,6 +402,8 @@ module cpu(input reset,       // positive reset signal
       MEM_WB_mem_to_reg_src_2 <= 0;
       MEM_WB_rd <= 0;
       MEM_WB_is_halted <= 0;
+      MEM_WB_pc_to_reg <= 0;
+      MEM_WB_pc <= 0;
     end
     else begin
       MEM_WB_mem_to_reg <= EX_MEM_mem_to_reg;   
@@ -412,6 +412,8 @@ module cpu(input reset,       // positive reset signal
       MEM_WB_mem_to_reg_src_2 <= ReadData;
       MEM_WB_rd <= EX_MEM_rd;
       MEM_WB_is_halted <= EX_MEM_is_halted;
+      MEM_WB_pc_to_reg <= EX_MEM_pc_to_reg;
+      MEM_WB_pc <= EX_MEM_pc;
     end
   end
 
@@ -465,7 +467,7 @@ module cpu(input reset,       // positive reset signal
     .input_1(MEM_WB_mem_to_reg_src_1),      // input
     .input_2(MEM_WB_mem_to_reg_src_2),      // input
     .control(MEM_WB_mem_to_reg),            // input
-    .mux_out(rd_din)                        // output
+    .mux_out(mem_to_reg_mux_out)            // output
   );
 
   // ---------- ALUSrc Mux ----------
@@ -542,6 +544,15 @@ mux_2x1 target_pc_mux(
   .mux_out(real_pc_target)                  // output
 );
 
+// ---------- pc to reg Mux ----------
+mux_2x1 pc_to_reg_mux(
+  .input_1(mem_to_reg_mux_out),
+  .input_2(MEM_WB_pc + 4),
+  .control(MEM_WB_pc_to_reg),
+  .mux_out(rd_din)
+);
+
+wire [31:0] mem_to_reg_mux_out;
 wire [31:0] btb_next_pc;
 
 // ---------- next_pc Mux ----------
