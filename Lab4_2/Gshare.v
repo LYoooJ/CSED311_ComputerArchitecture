@@ -6,24 +6,25 @@ module Gshare(input reset,
               input [31:0] actual_branch_target,
               input actual_taken,
               input prediction_correct,
+              input [4:0] pht_update_index,
               input [31:0] current_pc,
               input [31:0] ID_EX_pc,
+              output reg [4:0] accessed_pht_index,
               output reg [31:0] next_pc);
 
-// JAL, JALR 처리??
-reg [31:0] taken;
-reg [31:0] counter_update;
-reg [31:0] prediction;
-reg [4:0] bhsr;
-reg [24:0] tag_table [31:0];
-reg [31:0] btb [31:0]; 
+reg [31:0] taken;                   // 실제로 taken 되었는지
+reg [31:0] counter_update;          // counter update 신호
+reg [31:0] prediction;              // 각 counter의 prediction
+reg [4:0] bhsr;                     // branch history shift register
+reg [24:0] tag_table [31:0];        // tag table
+reg [31:0] btb [31:0];              // branch target buffer
 
-wire [4:0] btb_index;
-wire [4:0] pht_index;
-wire [31:0] branch_target;
-wire [24:0] tag;
-wire pht_prediction;
-wire gshare_taken;
+wire [4:0] btb_index;               // btb에서 접근할 index
+wire [4:0] pht_index;               // pht에서 접근할 counter의 index
+wire [31:0] branch_target;          // btb에서 읽은 branch target
+wire [24:0] tag;                    // 현재 pc의 tag 값
+wire pht_prediction;                // pht에서 가져온 예측 값
+wire gshare_taken;                  // 예측한 taken 여부
 
 integer k;
 
@@ -31,7 +32,7 @@ assign tag = current_pc[31:7];
 assign btb_index = current_pc[6:2];
 assign pht_index = bhsr ^ btb_index;
 assign branch_target = btb[btb_index];
-assign pht_prediction = prediction[pht_index]; // ??
+assign pht_prediction = prediction[pht_index];
 assign gshare_taken = pht_prediction && (tag == tag_table[btb_index]);
 
 // ***** generate pattern history table *****
@@ -57,7 +58,6 @@ always @(posedge clk) begin
             tag_table[k] <= 25'b0;
             btb[k] <= 32'b0;
             taken[k] <= 1'b0;
-            //prediction[k] <= 1'b0;
             counter_update[k] <= 1'b0;
         end
     end
@@ -69,7 +69,7 @@ always @(posedge clk) begin
                 tag_table[ID_EX_pc[6:2]] <= tag;
             end
             for (k = 0; k < 32; k = k + 1) begin
-                if (k == {27'b0, pht_index}) begin
+                if (k == {27'b0, pht_update_index}) begin
                     taken[k] <= actual_taken;
                     counter_update[k] <= 1'b1;
                 end 
