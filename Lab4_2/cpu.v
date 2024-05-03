@@ -81,7 +81,7 @@ module cpu(input reset,       // positive reset signal
   wire [31:0] real_pc_target;
   wire prediction_correct;
 
-
+  wire [4:0] accessed_pht_index;
 
   // Control flow instruction이면서 pc 예측이 맞을 때 || non-control flow 일 때
   assign prediction_correct = ((real_pc_target == ID_EX_next_pc) && (ID_EX_is_branch || ID_EX_is_jal || ID_EX_is_jalr)) || (!ID_EX_is_branch && !ID_EX_is_jal && !ID_EX_is_jalr);
@@ -112,6 +112,7 @@ module cpu(input reset,       // positive reset signal
   reg [31:0] IF_ID_pc;
   reg [31:0] IF_ID_next_pc;
   reg IF_ID_flush;
+  reg [4:0] IF_ID_pht_index;
 
   /***** ID/EX pipeline registers *****/
   // From the control unit
@@ -138,6 +139,7 @@ module cpu(input reset,       // positive reset signal
   reg [4:0] ID_EX_rs2;
   reg [31:0] ID_EX_inst;
   reg ID_EX_is_halted;
+  reg [4:0] ID_EX_pht_index;
 
   /***** EX/MEM pipeline registers *****/
   // From the control unit
@@ -185,8 +187,10 @@ module cpu(input reset,       // positive reset signal
     .actual_branch_target(real_pc_target),
     .actual_taken(taken),
     .prediction_correct(prediction_correct),
+    .pht_update_index(ID_EX_pht_index),
     .current_pc(current_pc),
     .ID_EX_pc(ID_EX_pc),
+    .accessed_pht_index(accessed_pht_index),
     .next_pc(btb_next_pc)
   );
   
@@ -205,12 +209,14 @@ module cpu(input reset,       // positive reset signal
       IF_ID_pc <= 32'b0;
       IF_ID_next_pc <= 32'b0;
       IF_ID_flush <= 0;
+      IF_ID_pht_index <= 5'b0;
     end
     else begin
       if(IFIDwrite == 1) begin
         IF_ID_inst <= inst;
         IF_ID_pc <= current_pc;
         IF_ID_next_pc <= next_pc;
+        IF_ID_pht_index <= accessed_pht_index;
         $display("[0x%x]: 0x%x", IF_ID_pc, IF_ID_inst);
         if (!prediction_correct) begin
           IF_ID_flush <= 1;
@@ -282,6 +288,7 @@ module cpu(input reset,       // positive reset signal
       ID_EX_is_jalr <= 0;
       ID_EX_pc <= 0;
       ID_EX_next_pc <= 0;
+      ID_EX_pht_index <= 0;
     end
     else begin
       // From others 
@@ -295,6 +302,7 @@ module cpu(input reset,       // positive reset signal
       ID_EX_rs2 <= IF_ID_inst[24:20];
       ID_EX_pc <= IF_ID_pc;
       ID_EX_next_pc <= IF_ID_next_pc;
+      ID_EX_pht_index <= IF_ID_pht_index;
 
       // 1. hazard가 detect 되었을 때 ID stage, 2. EX stage에서 예측이 틀렸음을 알았을 때 ID stage, 3. IF_ID flush == 1인 명령어가 ID stage
       if(hazardout == 1) begin 
