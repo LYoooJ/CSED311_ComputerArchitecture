@@ -85,7 +85,17 @@ always @(posedge clk) begin
         end
         else if (is_jal || is_jalr) begin
             btb[ID_EX_pc[6:2]] <= actual_branch_target;
-            tag_table[ID_EX_pc[6:2]] <= tag_write;        
+            tag_table[ID_EX_pc[6:2]] <= tag_write;   
+            for (k = 0; k < 32; k = k + 1) begin
+                if (k == {27'b0, pht_update_index}) begin
+                    taken[k] <= actual_taken;
+                    counter_update[k] <= 1'b1;
+                end 
+                else begin
+                    taken[k] <= 1'b0;
+                    counter_update[k] <= 1'b0;
+                end
+            end     
         end
         else begin
             for (k = 0; k < 32; k = k + 1) begin
