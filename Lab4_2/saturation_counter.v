@@ -8,7 +8,7 @@ reg [1:0] state;
 
 always @(posedge clk) begin
     if (reset) begin
-        state <= 2'b00;
+        state <= 2'b11;
     end else begin
         if (counter_update) begin
             if (actual_taken) begin
@@ -21,6 +21,7 @@ always @(posedge clk) begin
                     state <= state - 1;
                 end
             end
+            $display("counter update -> state: %b", state);
         end
     end
 end

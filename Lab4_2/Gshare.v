@@ -9,7 +9,7 @@ module Gshare(input reset,
               input [4:0] pht_update_index,
               input [31:0] current_pc,
               input [31:0] ID_EX_pc,
-              output reg [4:0] accessed_pht_index,
+              output reg [4:0] pht_index,
               output reg [31:0] next_pc);
 
 reg [31:0] taken;                   // 실제로 taken 되었는지
@@ -20,7 +20,7 @@ reg [31:0] tag_table [31:0];        // tag table
 reg [31:0] btb [31:0];              // branch target buffer
 
 wire [4:0] btb_index;               // btb에서 접근할 index
-wire [4:0] pht_index;               // pht에서 접근할 counter의 index
+//wire [4:0] pht_index;               // pht에서 접근할 counter의 index
 wire [31:0] branch_target;          // btb에서 읽은 branch target
 wire [31:0] tag;                    // 현재 pc의 tag 값
 wire pht_prediction;                // pht에서 가져온 예측 값
@@ -55,7 +55,7 @@ always @(posedge clk) begin
     if (reset) begin // initialization
         bhsr <= 5'b0;
         for (k = 0; k < 32; k = k + 1) begin
-            tag_table[k] <= 32'b0;
+            tag_table[k] <= 32'b11111111111111111111111111111111;
             btb[k] <= 32'b0;
             taken[k] <= 1'b0;
             counter_update[k] <= 1'b0;
@@ -63,14 +63,21 @@ always @(posedge clk) begin
     end
     else begin
         if (is_branch) begin // branch
+            $display("is branch!");
             if (!prediction_correct) begin
                 btb[ID_EX_pc[6:2]] <= actual_branch_target;
                 tag_table[ID_EX_pc[6:2]] <= tag;
+                $display("btb[%b] <= 0x%x", ID_EX_pc[6:2], actual_branch_target);
+                $display("tag_table[%b] <= 0x%x", ID_EX_pc[6:2], tag);
             end
             for (k = 0; k < 32; k = k + 1) begin
                 if (k == {27'b0, pht_update_index}) begin
                     taken[k] <= actual_taken;
                     counter_update[k] <= 1'b1;
+                    $display("--------------------------------------");
+                    $display("pht_update_index: %b", pht_update_index);
+                    $display("counter[%d] update by %d", k, actual_taken);
+                    $display("--------------------------------------");
                 end 
                 else begin
                     taken[k] <= 1'b0;
@@ -79,10 +86,14 @@ always @(posedge clk) begin
             end
             bhsr <= {actual_taken, bhsr[4:1]};
         end
+        else if (is_jal || is_jalr) begin
+            btb[ID_EX_pc[6:2]] <= actual_branch_target;
+            tag_table[ID_EX_pc[6:2]] <= tag;        
+        end
         else begin
-            if (is_jal || is_jalr) begin
-                btb[ID_EX_pc[6:2]] <= actual_branch_target;
-                tag_table[ID_EX_pc[6:2]] <= tag;        
+            for (k = 0; k < 32; k = k + 1) begin
+                taken[k] <= 1'b0;
+                counter_update[k] <= 1'b0;
             end
         end
     end
@@ -96,4 +107,22 @@ mux_2x1 next_pc_mux(
     .mux_out(next_pc)
 );
 
+always @(posedge clk) begin
+    $display("");
+    if (gshare_taken) begin
+        $display("gshare taken!");
+    end else begin
+        $display("gshare not taken!");
+    end
+end
+
+integer j;
+
+always @(posedge clk) begin
+    $display("current pc: 0x%x", current_pc);
+    $display("btb_index: %b, bhsr: %b, pht_index: %b", btb_index, bhsr, pht_index);
+    $display("tag: 0x%x, tag_table[%b]: 0x%x", tag, btb_index, tag_table[btb_index]);
+    $display("prediction: %d", prediction[pht_index]);
+    $display("pht_update_index: %b", pht_update_index);
+end
 endmodule

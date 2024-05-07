@@ -180,7 +180,7 @@ module cpu(input reset,       // positive reset signal
     .pht_update_index(ID_EX_pht_index),
     .current_pc(current_pc),
     .ID_EX_pc(ID_EX_pc),
-    .accessed_pht_index(accessed_pht_index),
+    .pht_index(accessed_pht_index),
     .next_pc(btb_next_pc)
   );
   
