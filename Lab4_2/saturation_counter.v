@@ -21,7 +21,6 @@ always @(posedge clk) begin
                     state <= state - 1;
                 end
             end
-            $display("counter update -> state: %b", state);
         end
     end
 end

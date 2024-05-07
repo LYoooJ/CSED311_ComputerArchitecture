@@ -25,11 +25,15 @@ wire [31:0] branch_target;          // btb에서 읽은 branch target
 wire [31:0] tag;                    // 현재 pc의 tag 값
 wire pht_prediction;                // pht에서 가져온 예측 값
 wire gshare_taken;                  // 예측한 taken 여부
+wire [31:0] tag_write;
+wire [4:0] btb_write_index;
 
 integer k;
 
 assign tag = current_pc[31:0];
 assign btb_index = current_pc[6:2];
+assign tag_write = ID_EX_pc[31:0];
+assign btb_write_index = ID_EX_pc[6:2];
 assign pht_index = bhsr ^ btb_index;
 assign branch_target = btb[btb_index];
 assign pht_prediction = prediction[pht_index];
@@ -63,21 +67,14 @@ always @(posedge clk) begin
     end
     else begin
         if (is_branch) begin // branch
-            $display("is branch!");
             if (!prediction_correct) begin
-                btb[ID_EX_pc[6:2]] <= actual_branch_target;
-                tag_table[ID_EX_pc[6:2]] <= tag;
-                $display("btb[%b] <= 0x%x", ID_EX_pc[6:2], actual_branch_target);
-                $display("tag_table[%b] <= 0x%x", ID_EX_pc[6:2], tag);
+                btb[btb_write_index] <= actual_branch_target;
+                tag_table[btb_write_index] <= tag_write;
             end
             for (k = 0; k < 32; k = k + 1) begin
                 if (k == {27'b0, pht_update_index}) begin
                     taken[k] <= actual_taken;
                     counter_update[k] <= 1'b1;
-                    $display("--------------------------------------");
-                    $display("pht_update_index: %b", pht_update_index);
-                    $display("counter[%d] update by %d", k, actual_taken);
-                    $display("--------------------------------------");
                 end 
                 else begin
                     taken[k] <= 1'b0;
@@ -88,7 +85,7 @@ always @(posedge clk) begin
         end
         else if (is_jal || is_jalr) begin
             btb[ID_EX_pc[6:2]] <= actual_branch_target;
-            tag_table[ID_EX_pc[6:2]] <= tag;        
+            tag_table[ID_EX_pc[6:2]] <= tag_write;        
         end
         else begin
             for (k = 0; k < 32; k = k + 1) begin
@@ -107,22 +104,4 @@ mux_2x1 next_pc_mux(
     .mux_out(next_pc)
 );
 
-always @(posedge clk) begin
-    $display("");
-    if (gshare_taken) begin
-        $display("gshare taken!");
-    end else begin
-        $display("gshare not taken!");
-    end
-end
-
-integer j;
-
-always @(posedge clk) begin
-    $display("current pc: 0x%x", current_pc);
-    $display("btb_index: %b, bhsr: %b, pht_index: %b", btb_index, bhsr, pht_index);
-    $display("tag: 0x%x, tag_table[%b]: 0x%x", tag, btb_index, tag_table[btb_index]);
-    $display("prediction: %d", prediction[pht_index]);
-    $display("pht_update_index: %b", pht_update_index);
-end
 endmodule
