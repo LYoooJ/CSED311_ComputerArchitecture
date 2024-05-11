@@ -83,8 +83,16 @@ module cpu(input reset,       // positive reset signal
 
   wire [4:0] accessed_pht_index;
 
+  wire [31:0] increment_pc;
+  wire [31:0] pcSrc1_mux_out;
+  wire pcSrc1;
+  wire [31:0] mem_to_reg_mux_out;
+  wire [31:0] btb_next_pc;
+
+  assign pcSrc1 = (ID_EX_is_branch && alu_bcond) || ID_EX_is_jal;
+
   // Control flow instruction이면서 pc 예측이 맞을 때 || non-control flow 일 때
-  assign prediction_correct = ((real_pc_target == ID_EX_next_pc) && (ID_EX_is_branch || ID_EX_is_jal || ID_EX_is_jalr)) || (!ID_EX_is_branch && !ID_EX_is_jal && !ID_EX_is_jalr);
+  assign prediction_correct = (real_pc_target == ID_EX_next_pc) || !ID_EX_is_controlflow;
 
   /***** Register declarations *****/
   // You need to modify the width of registers
@@ -125,6 +133,7 @@ module cpu(input reset,       // positive reset signal
   reg ID_EX_is_halted;
   reg [4:0] ID_EX_pht_index;
   reg ID_EX_pc_to_reg;
+  reg ID_EX_is_controlflow;
 
   /***** EX/MEM pipeline registers *****/
   // From the control unit
@@ -207,7 +216,6 @@ module cpu(input reset,       // positive reset signal
         IF_ID_pc <= current_pc;
         IF_ID_next_pc <= next_pc;
         IF_ID_pht_index <= accessed_pht_index;
-        //$display("[0x%x]: 0x%x", IF_ID_pc, IF_ID_inst);
         if (!prediction_correct) begin
           IF_ID_flush <= 1;
         end
@@ -280,6 +288,7 @@ module cpu(input reset,       // positive reset signal
       ID_EX_next_pc <= 0;
       ID_EX_pht_index <= 0;
       ID_EX_pc_to_reg <= 0;
+      ID_EX_is_controlflow <= 0;
     end
     else begin
       // From others 
@@ -308,6 +317,7 @@ module cpu(input reset,       // positive reset signal
         ID_EX_is_jal <= 0;
         ID_EX_is_jalr <= 0;
         ID_EX_pc_to_reg <= 0;
+        ID_EX_is_controlflow <= 0;
       end
       else if (prediction_correct == 0 || IF_ID_flush == 1) begin
         ID_EX_alu_op <= 0;        
@@ -321,7 +331,7 @@ module cpu(input reset,       // positive reset signal
         ID_EX_is_jal <= 0;
         ID_EX_is_jalr <= 0;
         ID_EX_pc_to_reg <= 0;
-        //$display("flush!");
+        ID_EX_is_controlflow <= 0;
       end
       else begin 
         ID_EX_alu_op <= ALUOp;        
@@ -335,24 +345,25 @@ module cpu(input reset,       // positive reset signal
         ID_EX_is_jal <= is_jal;
         ID_EX_is_jalr <= is_jalr;  
         ID_EX_pc_to_reg <= pc_to_reg;
+        ID_EX_is_controlflow <= (is_jal || is_jalr || branch);
       end
     end
   end
 
   // ---------- ALU Control Unit ----------
   ALUControlUnit alu_ctrl_unit (
-    .part_of_inst(ID_EX_inst),            // input
-    .alu_op(ID_EX_alu_op),                // input
-    .alu_control_lines(alu_control_lines) // output
+    .part_of_inst(ID_EX_inst),              // input
+    .alu_op(ID_EX_alu_op),                  // input
+    .alu_control_lines(alu_control_lines)   // output
   );
 
   // ---------- ALU ----------
   ALU alu (
-    .alu_op(alu_control_lines),           // input
-    .alu_in_1(alu_in_1),                  // input  
-    .alu_in_2(alu_in_2),                  // input
-    .alu_result(alu_result),              // output
-    .alu_bcond(alu_bcond)                 // output
+    .alu_op(alu_control_lines),             // input
+    .alu_in_1(alu_in_1),                    // input  
+    .alu_in_2(alu_in_2),                    // input
+    .alu_result(alu_result),                // output
+    .alu_bcond(alu_bcond)                   // output
   );
 
   // Update EX/MEM pipeline registers here
@@ -384,13 +395,13 @@ module cpu(input reset,       // positive reset signal
 
   // ---------- Data Memory ----------
   DataMemory dmem(
-    .reset (reset),                 // input
-    .clk (clk),                     // input
-    .addr (EX_MEM_alu_out),         // input
-    .din (EX_MEM_dmem_data),        // input
-    .mem_read (EX_MEM_mem_read),    // input
-    .mem_write (EX_MEM_mem_write),  // input
-    .dout (ReadData)                // output
+    .reset (reset),                         // input
+    .clk (clk),                             // input
+    .addr (EX_MEM_alu_out),                 // input
+    .din (EX_MEM_dmem_data),                // input
+    .mem_read (EX_MEM_mem_read),            // input
+    .mem_write (EX_MEM_mem_write),          // input
+    .dout (ReadData)                        // output
   );
 
   // Update MEM/WB pipeline registers here
@@ -419,39 +430,39 @@ module cpu(input reset,       // positive reset signal
 
   // ---------- Hazard Detection Unit ----------
   HazardDetection HazardDetection(
-    .ID_rs1(IF_ID_inst[19:15]),       // input
-    .ID_rs2(IF_ID_inst[24:20]),       // input
-    .EX_rd(ID_EX_rd),                 // input
-    .MEM_rd(EX_MEM_rd),               // input
-    .EX_mem_read(ID_EX_mem_read),     // input
-    .EX_reg_write(ID_EX_reg_write),   // input
-    .MEM_mem_read(EX_MEM_mem_read),   // input
-    .ID_opcode(IF_ID_inst[6:0]),      // input
-    .PCWrite(PCwrite),                // output
-    .IF_ID_write(IFIDwrite),          // output
-    .is_hazard(hazardout)             // output
+    .ID_rs1(IF_ID_inst[19:15]),             // input
+    .ID_rs2(IF_ID_inst[24:20]),             // input
+    .EX_rd(ID_EX_rd),                       // input
+    .MEM_rd(EX_MEM_rd),                     // input
+    .EX_mem_read(ID_EX_mem_read),           // input
+    .EX_reg_write(ID_EX_reg_write),         // input
+    .MEM_mem_read(EX_MEM_mem_read),         // input
+    .ID_opcode(IF_ID_inst[6:0]),            // input
+    .PCWrite(PCwrite),                      // output
+    .IF_ID_write(IFIDwrite),                // output
+    .is_hazard(hazardout)                   // output
   );
 
   // ---------- Forwarding Unit ----------
   ForwardingUnit ForwardingUnit(
-    .EX_rs1(ID_EX_rs1),               // input
-    .EX_rs2(ID_EX_rs2),               // input
-    .MEM_rd(EX_MEM_rd),               // input
-    .WB_rd(MEM_WB_rd),                // input
-    .MEM_RegWrite(EX_MEM_reg_write),  // input
-    .WB_RegWrite(MEM_WB_reg_write),   // input
-    .ForwardA(ForwardA),              // output
-    .ForwardB(ForwardB)               // output
+    .EX_rs1(ID_EX_rs1),                     // input
+    .EX_rs2(ID_EX_rs2),                     // input
+    .MEM_rd(EX_MEM_rd),                     // input
+    .WB_rd(MEM_WB_rd),                      // input
+    .MEM_RegWrite(EX_MEM_reg_write),        // input
+    .WB_RegWrite(MEM_WB_reg_write),         // input
+    .ForwardA(ForwardA),                    // output
+    .ForwardB(ForwardB)                     // output
   );
 
   // ---------- Ecall forwarding Unit ----------
   ecall_forward ecall_forward(
-    .opcode(IF_ID_inst[6:0]),         // input
-    .MEM_rd(EX_MEM_rd),               // input
-    .WB_rd(MEM_WB_rd),                // input
-    .MEM_RegWrite(EX_MEM_reg_write),  // input
-    .WB_RegWrite(MEM_WB_reg_write),   // input
-    .control(forward17)               // output
+    .opcode(IF_ID_inst[6:0]),               // input
+    .MEM_rd(EX_MEM_rd),                     // input
+    .WB_rd(MEM_WB_rd),                      // input
+    .MEM_RegWrite(EX_MEM_reg_write),        // input
+    .WB_RegWrite(MEM_WB_reg_write),         // input
+    .control(forward17)                     // output
   );
 
   // ---------- isEcall Mux ----------
@@ -516,29 +527,23 @@ Adder branch_target_adder(
 );
 
 // ---------- PC increment Adder ----------
-Adder pc_increment_adder(
-  .input_1(ID_EX_pc),
-  .input_2(4),
-  .sum(increment_pc)
+Adder pc_increment_adder(                   
+  .input_1(ID_EX_pc),                       // input
+  .input_2(4),                              // input
+  .sum(increment_pc)                        // output
 );
-
-wire [31:0] increment_pc;
-wire [31:0] pcSrc1_mux_out;
-wire pcSrc1;
-
-assign pcSrc1 = (ID_EX_is_branch && alu_bcond) || ID_EX_is_jal;
 
 // ---------- pcSrc1 Adder ----------
 mux_2x1 pcSrc1_mux(
-  .input_1(increment_pc),
-  .input_2(branch_target),
-  .control(pcSrc1),
-  .mux_out(pcSrc1_mux_out)
+  .input_1(increment_pc),                   // input
+  .input_2(branch_target),                  // input
+  .control(pcSrc1),                         // input
+  .mux_out(pcSrc1_mux_out)                  // output
 );
 
 // ---------- target pc Mux ----------
 mux_2x1 target_pc_mux(
-  .input_1(pcSrc1_mux_out),                  // input
+  .input_1(pcSrc1_mux_out),                 // input
   .input_2(alu_result),                     // input
   .control(ID_EX_is_jalr),                  // input
   .mux_out(real_pc_target)                  // output
@@ -546,21 +551,18 @@ mux_2x1 target_pc_mux(
 
 // ---------- pc to reg Mux ----------
 mux_2x1 pc_to_reg_mux(
-  .input_1(mem_to_reg_mux_out),
-  .input_2(MEM_WB_pc + 4),
-  .control(MEM_WB_pc_to_reg),
-  .mux_out(rd_din)
+  .input_1(mem_to_reg_mux_out),             // input
+  .input_2(MEM_WB_pc + 4),                  // input
+  .control(MEM_WB_pc_to_reg),               // input
+  .mux_out(rd_din)                          // output
 );
-
-wire [31:0] mem_to_reg_mux_out;
-wire [31:0] btb_next_pc;
 
 // ---------- next_pc Mux ----------
 mux_2x1 mux(
-  .input_1(real_pc_target),
-  .input_2(btb_next_pc),
-  .control(prediction_correct),
-  .mux_out(next_pc)
+  .input_1(real_pc_target),                 // input
+  .input_2(btb_next_pc),                    // input
+  .control(prediction_correct),             // input
+  .mux_out(next_pc)                         // output
 );
 
 endmodule

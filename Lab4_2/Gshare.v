@@ -16,23 +16,22 @@ reg [31:0] taken;                   // 실제로 taken 되었는지
 reg [31:0] counter_update;          // counter update 신호
 reg [31:0] prediction;              // 각 counter의 prediction
 reg [4:0] bhsr;                     // branch history shift register
-reg [31:0] tag_table [31:0];        // tag table
+reg [24:0] tag_table [31:0];        // tag table
 reg [31:0] btb [31:0];              // branch target buffer
 
 wire [4:0] btb_index;               // btb에서 접근할 index
-//wire [4:0] pht_index;               // pht에서 접근할 counter의 index
 wire [31:0] branch_target;          // btb에서 읽은 branch target
-wire [31:0] tag;                    // 현재 pc의 tag 값
+wire [24:0] tag;                    // 현재 pc의 tag 값
 wire pht_prediction;                // pht에서 가져온 예측 값
 wire gshare_taken;                  // 예측한 taken 여부
-wire [31:0] tag_write;
+wire [24:0] tag_write;
 wire [4:0] btb_write_index;
 
 integer k;
 
-assign tag = current_pc[31:0];
+assign tag = current_pc[31:7];
 assign btb_index = current_pc[6:2];
-assign tag_write = ID_EX_pc[31:0];
+assign tag_write = ID_EX_pc[31:7];
 assign btb_write_index = ID_EX_pc[6:2];
 assign pht_index = bhsr ^ btb_index;
 assign branch_target = btb[btb_index];
@@ -59,7 +58,7 @@ always @(posedge clk) begin
     if (reset) begin // initialization
         bhsr <= 5'b0;
         for (k = 0; k < 32; k = k + 1) begin
-            tag_table[k] <= 32'b11111111111111111111111111111111;
+            tag_table[k] <= 25'b1111111111111111111111111;
             btb[k] <= 32'b0;
             taken[k] <= 1'b0;
             counter_update[k] <= 1'b0;
