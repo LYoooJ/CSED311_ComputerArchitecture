@@ -304,8 +304,7 @@ module cpu(input reset,       // positive reset signal
       ID_EX_next_pc <= IF_ID_next_pc;
       ID_EX_pht_index <= IF_ID_pht_index;
 
-      // 1. hazard가 detect 되었을 때 ID stage, 2. EX stage에서 예측이 틀렸음을 알았을 때 ID stage, 3. IF_ID flush == 1인 명령어가 ID stage
-      if(hazardout == 1) begin 
+      if(hazardout == 1) begin  // hazard가 detect 되었을 때 ID stage
         ID_EX_alu_op <= 0;        
         ID_EX_alu_src <= 0;   
         ID_EX_mem_write <= 0;     
@@ -319,7 +318,7 @@ module cpu(input reset,       // positive reset signal
         ID_EX_pc_to_reg <= 0;
         ID_EX_is_controlflow <= 0;
       end
-      else if (prediction_correct == 0 || IF_ID_flush == 1) begin
+      else if (prediction_correct == 0 || IF_ID_flush == 1) begin // EX stage에서 예측이 틀렸음을 알았을 때 ID stage || IF_ID flush == 1인 명령어가 ID stage
         ID_EX_alu_op <= 0;        
         ID_EX_alu_src <= 0;   
         ID_EX_mem_write <= 0;     

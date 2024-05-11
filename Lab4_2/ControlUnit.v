@@ -53,13 +53,13 @@ module ControlUnit(input [6:0] part_of_inst,
             write_enable = 1;
             pc_to_reg = 1;
             alu_src = 1;
-            alu_op = 2'b00; //
+            alu_op = 2'b00; 
         end
         `JAL: begin
             is_jal = 1;
             pc_to_reg = 1;
             write_enable = 1;
-            alu_op = 2'b00; //
+            alu_op = 2'b00; 
         end
         `BRANCH: begin
             branch = 1;

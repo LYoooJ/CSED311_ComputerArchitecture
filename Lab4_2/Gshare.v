@@ -66,7 +66,7 @@ always @(posedge clk) begin
     end
     else begin
         if (is_branch) begin // branch
-            if (!prediction_correct) begin
+            if (!prediction_correct && actual_taken) begin
                 btb[btb_write_index] <= actual_branch_target;
                 tag_table[btb_write_index] <= tag_write;
             end
@@ -83,8 +83,10 @@ always @(posedge clk) begin
             bhsr <= {actual_taken, bhsr[4:1]};
         end
         else if (is_jal || is_jalr) begin
-            btb[ID_EX_pc[6:2]] <= actual_branch_target;
-            tag_table[ID_EX_pc[6:2]] <= tag_write;   
+            if (!prediction_correct) begin
+                btb[ID_EX_pc[6:2]] <= actual_branch_target;
+                tag_table[ID_EX_pc[6:2]] <= tag_write;   
+            end
             for (k = 0; k < 32; k = k + 1) begin
                 if (k == {27'b0, pht_update_index}) begin
                     taken[k] <= actual_taken;
