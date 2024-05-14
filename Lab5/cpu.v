@@ -89,6 +89,9 @@ module cpu(input reset,       // positive reset signal
   wire [31:0] mem_to_reg_mux_out;
   wire [31:0] btb_next_pc;
 
+  /***** cache *****/
+  wire is_input_valid;
+
   assign pcSrc1 = (ID_EX_is_branch && alu_bcond) || ID_EX_is_jal;
 
   // Control flow instruction이면서 pc 예측이 맞을 때 || non-control flow 일 때
@@ -562,6 +565,22 @@ mux_2x1 mux(
   .input_2(btb_next_pc),                    // input
   .control(prediction_correct),             // input
   .mux_out(next_pc)                         // output
+);
+
+Cache cache (
+    .reset(reset),
+    .clk(clk),
+
+    .is_input_valid(is_input_valid),
+    .addr(EX_MEM_alu_out),
+    .mem_read(EX_MEM_mem_read),
+    .mem_write(EX_MEM_mem_write),
+    .din(EX_MEM_dmem_data),
+
+    .is_ready(is_ready),
+    .is_output_valid(is_output_valid),
+    .dout(dout),
+    .is_hit(is_hit)
 );
 
 endmodule
