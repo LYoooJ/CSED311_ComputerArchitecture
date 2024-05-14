@@ -91,6 +91,9 @@ module cpu(input reset,       // positive reset signal
 
   /***** cache *****/
   wire is_input_valid;
+  wire is_ready;
+  wire is_output_valid;
+  wire is_hit;
 
   assign pcSrc1 = (ID_EX_is_branch && alu_bcond) || ID_EX_is_jal;
 
