@@ -1,5 +1,5 @@
 // Title       : tb_top.cpp
-// Author      : Minsu Gong (gongms@postech.ac.kr)
+// Author      : Okkyun Woo (okkyun.w@postech.ac.kr)
 
 #include <verilated.h>
 #include <verilated_vcd_c.h>
@@ -12,7 +12,7 @@
 using namespace std;
 #include "Vtop.h"
 
-#define MAX_SIM_TIME 10000
+#define MAX_SIM_TIME 1000000000
 int sim_time = 0;
 int total_cycle = 0;
 
@@ -28,10 +28,13 @@ void next_cycle(Vtop* dut, VerilatedVcdC* m_trace) {
 
 int main(int argc, char** argv, char** env) {
     // TO DO : CHANGE "filename" TO PROVIDED "answer_*.txt" PATH
-    string filename = "./student_tb/answer_recursive.txt";
+    string filename = "/path/to/result/file";
     ifstream file(filename);
     stringstream ss;
     string reg_hex;
+
+    int hit_count = 0;
+    int miss_count = 0;
 
     Verilated::commandArgs(argc, argv);
     Vtop* dut = new Vtop;
@@ -74,6 +77,10 @@ int main(int argc, char** argv, char** env) {
     cout << "SIM TIME : " << sim_time << endl;
     cout << "TOTAL CYCLE : " << total_cycle << " (Answer : " << answer_cycle << ")" << endl;
     cout << "FINAL REGISTER OUTPUT" << endl;
+    
+    // Print your Hit ratio
+    //
+
     for (int i = 0; i < 32; i = i + 1) {
         ss << setw(8) << setfill('0') << hex << dut->print_reg[i];
         reg_hex = ss.str();
