@@ -1,5 +1,7 @@
+`include "CLOG2.v"
+
 module Cache #(parameter LINE_SIZE = 16, //block size
-               parameter NUM_SETS = 8 //8개의 set
+               parameter NUM_SETS = 8, //8개의 set
                parameter NUM_WAYS = 2) (
     //cache size = 16 * 8 * 2 = 256 byte cache
     input reset,
@@ -11,9 +13,9 @@ module Cache #(parameter LINE_SIZE = 16, //block size
     input [31:0] din, //write data
 
     output is_ready,
-    output is_output_valid,
-    output [31:0] dout,
-    output is_hit);
+    output reg is_output_valid,
+    output reg [31:0] dout,
+    output reg is_hit);
 
   // Wire declarations
   integer i;
@@ -23,24 +25,25 @@ module Cache #(parameter LINE_SIZE = 16, //block size
   wire [1:0] block_offset; //(2)
   //wire [1:0] word_offset; (2)
   wire [24:0] tag; //32-(3+2+2) = 25
+  //wire way;
   //////////
 
   // Reg declarations
   /////////////bank registers////////////////
-  reg [0:LINE_SIZE-1] data_bank [0:NUM_SETS-1][0:NUM_WAYS-1];
-  reg valid_bank [0:NUM_SETS-1][0:NUM_WAYS-1];
-  reg dirty_bank [0:NUM_SETS-1][0:NUM_WAYS-1];
-  reg lru_bank [0:NUM_SETS-1][0:NUM_WAYS-1];
-  reg [24:0] tag_bank [0:NUM_SETS-1][0:NUM_WAYS-1];
+  reg [LINE_SIZE-1:0] data_bank [NUM_SETS-1:0][NUM_WAYS-1:0];
+  reg valid_bank [NUM_SETS-1:0][NUM_WAYS-1:0];
+  reg dirty_bank [NUM_SETS-1:0][NUM_WAYS-1:0];
+  reg lru_bank [NUM_SETS-1:0][NUM_WAYS-1:0];
+  reg [24:0] tag_bank [NUM_SETS-1:0][NUM_WAYS-1:0];
 
   /////////////data mem reg signal regs////////////////
-  reg [0:LINE_SIZE-1] data_out; //data memory output
+  reg [LINE_SIZE*8-1:0] data_out; //data memory output
   reg [31:0] mem_addr; //data memory address
-  reg mem_rw; 
+  reg _mem_rw; 
   reg mem_input_valid; 
 
-  reg[0:LINE_SIZE*8 -1] read_data;
-  reg[0:LINE_SIZE*8 -1] write_data;
+  reg[LINE_SIZE*8 -1:0] read_data;
+  reg[LINE_SIZE*8 -1:0] write_data;
 
   reg [1:0] current_state; //00(invalid), 01(tagcompare), 10(write back), 11(write allocate)
   reg [1:0] next_state;
@@ -56,27 +59,38 @@ module Cache #(parameter LINE_SIZE = 16, //block size
   always @(posedge clk) begin
     if (reset) begin
       for(i=0; i<NUM_SETS; i=i+1) begin
-        tag_bank[i] <= 24'h1; //여기 초기화다시 //////////////////
-        data_bank[i] <=  LINE_SIZE'h1;
-        valid_bank[i] <= 0;
-        dirty_bank[i] <= 0;
+        tag_bank[i][0] <= 25'h1;
+        tag_bank[i][1] <= 25'h1;
+        data_bank[i][0] <=  16'b1111111111111111;
+        data_bank[i][1] <= 16'b1111111111111111;
+        valid_bank[i][0] <= 0;
+        valid_bank[i][0] <=0;
+        dirty_bank[i][0] <= 0;
+        dirty_bank[i][1] <= 0;
+        lru_bank[i][0] <= 1'b0;
+        lru_bank[i][1] <= 1'b1;
       end
-      lru_bank <= 1'b0;
     end
   end
 
   always @(*) begin
-    read_data = data_bank[idx];
+    read_data = {data_bank[idx][0], data_bank[idx][1]};
     write_data = read_data;
 
     //write din assign
-    if(mem_rw == 1'b1) begin
-      write_data[block_offset*32:block_offset*32+31] <= din;
-    end
-    //read dout assign
-    else if(mem_rw == 1'b0) begin
-      dout = read_data[(block_offset*32) : (block_offset*32+31)];
-    end
+    case(block_offset)
+      0: write_data[31:0] = din;
+      1: write_data[63:32] = din;
+      2: write_data[95:64] = din;
+      3: write_data[127:96] =din;
+    endcase
+
+    case(block_offset)
+      0: dout = read_data[31:0];
+      1: dout = read_data[63:32];
+      2: dout = read_data[95:64];
+      3: dout = read_data[127:96];
+    endcase
 
     case(current_state)
       2'b00: begin //invalid
@@ -84,12 +98,14 @@ module Cache #(parameter LINE_SIZE = 16, //block size
           next_state = 2'b01; //valid 되면 next state tag compare
         end
       end
+
       2'b01: begin //tag compare
           //cache hit
             if(valid_bank[idx][0] == 1'b1 && tag_bank[idx][0] == tag) begin  //read hit
-              lru_bank[idx] = 1'b1;
+              lru_bank[idx][0] = 1'b1;
               is_hit =1;
               is_output_valid =1;
+              //way =0;
 
               if(mem_rw == 1'b1 && dirty_bank[idx][0] == 0) begin //write hit way 0
                 data_bank[idx][0] = write_data;
@@ -100,9 +116,10 @@ module Cache #(parameter LINE_SIZE = 16, //block size
               next_state = 2'b10;
             end
           end
-          else if(valid_bank[idx][1] && tag_bank[idx][1] == tag) begin // cache miss
+          else if(valid_bank[idx][1] && tag_bank[idx][1] == tag) begin
             is_hit = 1;
             is_output_valid = 1;
+            lru_bank[idx][1] =1'b1;
             if(mem_rw == 1'b1 && dirty_bank[idx][1] == 0) begin //write hit way 1
               data_bank[idx][1] = write_data;
               dirty_bank[idx][1] = 1;
@@ -127,8 +144,8 @@ module Cache #(parameter LINE_SIZE = 16, //block size
           
       2'b10: begin //write back 메모리가 준비 되었을 때 쓰는 작업
         if(is_data_mem_ready) begin
-          mem_addr = {tag_bank[idx], idx, block_offset, 4'b0000};
-          mem_rw = 1'b1; //write
+          mem_addr = {tag_bank[idx], idx, block_offset, 2'b00};
+          _mem_rw = 1'b1; //write
           if(is_ready) begin
             mem_input_valid =1;
             next_state = 2'b11;
@@ -137,12 +154,12 @@ module Cache #(parameter LINE_SIZE = 16, //block size
       end
       2'b11: begin // write allocate 읽어오기
         if(is_data_mem_ready) begin
-          mem_addr = {tag, idx, block_offset, 4'b0000};
+          mem_addr = {tag, idx, block_offset, 2'b00};
           if(is_ready) begin
             mem_input_valid =1;
-            mem_rw = 1'b0; //read
-            if(mem_output_valid) begin
-              write_data = mem_dout;
+            _mem_rw = 1'b0; //read
+            if(is_output_valid) begin
+              write_data = data_out;
               tag_bank[idx] = tag;
               valid_bank[idx] = 1;
               dirty_bank[idx] = 0;
@@ -153,7 +170,6 @@ module Cache #(parameter LINE_SIZE = 16, //block size
         end
       end
     endcase
-
   end
 
   always @(posedge clk) begin
@@ -167,14 +183,14 @@ module Cache #(parameter LINE_SIZE = 16, //block size
     .clk(clk),
 
     .is_input_valid(is_input_valid), //다시
-    .addr(mem_addr >> CLOG2(16)),        // NOTE: address must be shifted by CLOG2(LINE_SIZE)
+    .addr(mem_addr >> 4),        // NOTE: address must be shifted by CLOG2(LINE_SIZE)
     .mem_read(mem_rw == 1'b1),
     .mem_write(mem_rw == 1'b0),
     .din(din), //써야 할 data
 
     // is output from the data memory valid?
     .is_output_valid(is_output_valid),
-    .dout(mem_dout),
+    .dout(data_out),
     // is data memory ready to accept request?
     .mem_ready(is_data_mem_ready)
   );

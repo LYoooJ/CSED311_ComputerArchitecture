@@ -22,6 +22,7 @@ module cpu(input reset,       // positive reset signal
   wire [31:0] rs1_dout;
   wire [31:0] rs2_dout;
   wire [31:0] rd_din;
+  wire [31:0] dout;
 
   /***** Imm_gen_out wire *****/
   wire [31:0] imm_gen_out;
@@ -94,7 +95,7 @@ module cpu(input reset,       // positive reset signal
   wire is_ready;
   wire is_output_valid;
   wire is_hit;
-
+  assign is_input_valid = (EX_MEM_mem_write || EX_MEM_mem_read);
   assign pcSrc1 = (ID_EX_is_branch && alu_bcond) || ID_EX_is_jal;
 
   // Control flow instruction이면서 pc 예측이 맞을 때 || non-control flow 일 때
@@ -408,8 +409,8 @@ module cpu(input reset,       // positive reset signal
     .mem_read (EX_MEM_mem_read),            // input
     .mem_write (EX_MEM_mem_write),          // input
     .is_output_valid(is_output_valid),       // output
-    .dout (ReadData)                        // output
-    .mem_ready(mem_ready)                    // output
+    .dout (ReadData),                        // output
+    .mem_ready(is_data_mem_ready)                    // output
   );
 
   // Update MEM/WB pipeline registers here
