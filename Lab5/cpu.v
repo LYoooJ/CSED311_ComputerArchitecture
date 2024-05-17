@@ -98,6 +98,9 @@ module cpu(input reset,       // positive reset signal
   assign is_input_valid = (EX_MEM_mem_write || EX_MEM_mem_read);
   assign pcSrc1 = (ID_EX_is_branch && alu_bcond) || ID_EX_is_jal;
 
+  reg IF_ID_stall;
+  reg ID_EX_stall;
+  reg EX_MEM_stall;
   // Control flow instruction이면서 pc 예측이 맞을 때 || non-control flow 일 때
   assign prediction_correct = (real_pc_target == ID_EX_next_pc) || !ID_EX_is_controlflow;
 
@@ -208,6 +211,10 @@ module cpu(input reset,       // positive reset signal
     .dout(inst[31:0])         // output
   );
 
+  always @(posedge clk) begin
+    $display("%x", inst[31:0]);  
+  end
+
   // Update IF/ID pipeline registers here
   always @(posedge clk) begin
     if (reset) begin
@@ -218,7 +225,7 @@ module cpu(input reset,       // positive reset signal
       IF_ID_pht_index <= 5'b0;
     end
     else begin
-      if(IFIDwrite == 1) begin
+      if(IFIDwrite == 1 && IF_ID_stall == 0) begin
         IF_ID_inst <= inst;
         IF_ID_pc <= current_pc;
         IF_ID_next_pc <= next_pc;
@@ -299,59 +306,61 @@ module cpu(input reset,       // positive reset signal
     end
     else begin
       // From others 
-      ID_EX_inst <= IF_ID_inst;
-      ID_EX_rs1_data <= mux_forward_out;
-      ID_EX_rs2_data <= rs2_dout;
-      ID_EX_imm <= imm_gen_out;
-      ID_EX_ALU_ctrl_unit_input <= IF_ID_inst;
-      ID_EX_rd <= IF_ID_inst[11:7];
-      ID_EX_rs1 <= IF_ID_inst[19:15];
-      ID_EX_rs2 <= IF_ID_inst[24:20];
-      ID_EX_pc <= IF_ID_pc;
-      ID_EX_next_pc <= IF_ID_next_pc;
-      ID_EX_pht_index <= IF_ID_pht_index;
+      if (!ID_EX_stall) begin
+        ID_EX_inst <= IF_ID_inst;
+        ID_EX_rs1_data <= mux_forward_out;
+        ID_EX_rs2_data <= rs2_dout;
+        ID_EX_imm <= imm_gen_out;
+        ID_EX_ALU_ctrl_unit_input <= IF_ID_inst;
+        ID_EX_rd <= IF_ID_inst[11:7];
+        ID_EX_rs1 <= IF_ID_inst[19:15];
+        ID_EX_rs2 <= IF_ID_inst[24:20];
+        ID_EX_pc <= IF_ID_pc;
+        ID_EX_next_pc <= IF_ID_next_pc;
+        ID_EX_pht_index <= IF_ID_pht_index;
 
-      if(hazardout == 1) begin  // hazard가 detect 되었을 때 ID stage
-        ID_EX_alu_op <= 0;        
-        ID_EX_alu_src <= 0;   
-        ID_EX_mem_write <= 0;     
-        ID_EX_mem_read <= 0;     
-        ID_EX_mem_to_reg <= 0;     
-        ID_EX_reg_write <= 0; 
-        ID_EX_is_halted <= 0;
-        ID_EX_is_branch <= 0;
-        ID_EX_is_jal <= 0;
-        ID_EX_is_jalr <= 0;
-        ID_EX_pc_to_reg <= 0;
-        ID_EX_is_controlflow <= 0;
-      end
-      else if (prediction_correct == 0 || IF_ID_flush == 1) begin // EX stage에서 예측이 틀렸음을 알았을 때 ID stage || IF_ID flush == 1인 명령어가 ID stage
-        ID_EX_alu_op <= 0;        
-        ID_EX_alu_src <= 0;   
-        ID_EX_mem_write <= 0;     
-        ID_EX_mem_read <= 0;     
-        ID_EX_mem_to_reg <= 0;     
-        ID_EX_reg_write <= 0; 
-        ID_EX_is_halted <= 0;
-        ID_EX_is_branch <= 0;
-        ID_EX_is_jal <= 0;
-        ID_EX_is_jalr <= 0;
-        ID_EX_pc_to_reg <= 0;
-        ID_EX_is_controlflow <= 0;
-      end
-      else begin 
-        ID_EX_alu_op <= ALUOp;        
-        ID_EX_alu_src <= ALUSrc;   
-        ID_EX_mem_write <= MemWrite;     
-        ID_EX_mem_read <= MemRead;     
-        ID_EX_mem_to_reg <= MemtoReg;     
-        ID_EX_reg_write <= RegWrite;   
-        ID_EX_is_halted <= halted_check;
-        ID_EX_is_branch <= branch;
-        ID_EX_is_jal <= is_jal;
-        ID_EX_is_jalr <= is_jalr;  
-        ID_EX_pc_to_reg <= pc_to_reg;
-        ID_EX_is_controlflow <= (is_jal || is_jalr || branch);
+        if(hazardout == 1) begin  // hazard가 detect 되었을 때 ID stage
+          ID_EX_alu_op <= 0;        
+          ID_EX_alu_src <= 0;   
+          ID_EX_mem_write <= 0;     
+          ID_EX_mem_read <= 0;     
+          ID_EX_mem_to_reg <= 0;     
+          ID_EX_reg_write <= 0; 
+          ID_EX_is_halted <= 0;
+          ID_EX_is_branch <= 0;
+          ID_EX_is_jal <= 0;
+          ID_EX_is_jalr <= 0;
+          ID_EX_pc_to_reg <= 0;
+          ID_EX_is_controlflow <= 0;
+        end
+        else if (prediction_correct == 0 || IF_ID_flush == 1) begin // EX stage에서 예측이 틀렸음을 알았을 때 ID stage || IF_ID flush == 1인 명령어가 ID stage
+          ID_EX_alu_op <= 0;        
+          ID_EX_alu_src <= 0;   
+          ID_EX_mem_write <= 0;     
+          ID_EX_mem_read <= 0;     
+          ID_EX_mem_to_reg <= 0;     
+          ID_EX_reg_write <= 0; 
+          ID_EX_is_halted <= 0;
+          ID_EX_is_branch <= 0;
+          ID_EX_is_jal <= 0;
+          ID_EX_is_jalr <= 0;
+          ID_EX_pc_to_reg <= 0;
+          ID_EX_is_controlflow <= 0;
+        end
+        else begin 
+          ID_EX_alu_op <= ALUOp;        
+          ID_EX_alu_src <= ALUSrc;   
+          ID_EX_mem_write <= MemWrite;     
+          ID_EX_mem_read <= MemRead;     
+          ID_EX_mem_to_reg <= MemtoReg;     
+          ID_EX_reg_write <= RegWrite;   
+          ID_EX_is_halted <= halted_check;
+          ID_EX_is_branch <= branch;
+          ID_EX_is_jal <= is_jal;
+          ID_EX_is_jalr <= is_jalr;  
+          ID_EX_pc_to_reg <= pc_to_reg;
+          ID_EX_is_controlflow <= (is_jal || is_jalr || branch);
+        end
       end
     end
   end
@@ -386,32 +395,35 @@ module cpu(input reset,       // positive reset signal
       EX_MEM_pc <= 0;
     end
     else begin
-      EX_MEM_mem_write <= ID_EX_mem_write;     
-      EX_MEM_mem_read <= ID_EX_mem_read;      
-      EX_MEM_mem_to_reg <= ID_EX_mem_to_reg;   
-      EX_MEM_reg_write <= ID_EX_reg_write;     
-      EX_MEM_alu_out <= alu_result;
-      EX_MEM_dmem_data <= mux_forwardB_out;
-      EX_MEM_rd <= ID_EX_rd;
-      EX_MEM_is_halted <= ID_EX_is_halted;
-      EX_MEM_pc_to_reg <= ID_EX_pc_to_reg;
-      EX_MEM_pc <= ID_EX_pc;
+      if (!EX_MEM_stall) begin
+        $display("stall!");
+        EX_MEM_mem_write <= ID_EX_mem_write;     
+        EX_MEM_mem_read <= ID_EX_mem_read;      
+        EX_MEM_mem_to_reg <= ID_EX_mem_to_reg;   
+        EX_MEM_reg_write <= ID_EX_reg_write;     
+        EX_MEM_alu_out <= alu_result;
+        EX_MEM_dmem_data <= mux_forwardB_out;
+        EX_MEM_rd <= ID_EX_rd;
+        EX_MEM_is_halted <= ID_EX_is_halted;
+        EX_MEM_pc_to_reg <= ID_EX_pc_to_reg;
+        EX_MEM_pc <= ID_EX_pc;
+      end
     end
   end
 
-  // ---------- Data Memory ----------
-  DataMemory dmem(
-    .reset (reset),                         // input
-    .clk (clk),  
-    .is_input_valid(is_input_valid),                           // input
-    .addr (EX_MEM_alu_out),                 // input
-    .din (EX_MEM_dmem_data),                // input
-    .mem_read (EX_MEM_mem_read),            // input
-    .mem_write (EX_MEM_mem_write),          // input
-    .is_output_valid(is_output_valid),       // output
-    .dout (ReadData),                        // output
-    .mem_ready(is_data_mem_ready)                    // output
-  );
+  // // ---------- Data Memory ----------
+  // DataMemory dmem(
+  //   .reset (reset),                         // input
+  //   .clk (clk),  
+  //   .is_input_valid(is_input_valid),                           // input
+  //   .addr (EX_MEM_alu_out),                 // input
+  //   .din (EX_MEM_dmem_data),                // input
+  //   .mem_read (EX_MEM_mem_read),            // input
+  //   .mem_write (EX_MEM_mem_write),          // input
+  //   .is_output_valid(is_output_valid),       // output
+  //   .dout (ReadData),                        // output
+  //   .mem_ready(is_data_mem_ready)                    // output
+  // );
 
   // Update MEM/WB pipeline registers here
   always @(posedge clk) begin
@@ -580,7 +592,7 @@ Cache cache (
 
     .is_input_valid(is_input_valid),
     .addr(EX_MEM_alu_out),
-    .mem_rw(EX_MEM_mem_read), //read 연결로 충분한 지 확인
+    .mem_rw(EX_MEM_mem_write), //read 연결로 충분한 지 확인
     .din(EX_MEM_dmem_data),
 
     .is_ready(is_ready),
@@ -588,5 +600,25 @@ Cache cache (
     .dout(dout),
     .is_hit(is_hit)
 );
+
+always @(*) begin
+  if (is_input_valid) begin
+    if (is_output_valid && is_hit) begin
+      IF_ID_stall = 0;
+      ID_EX_stall = 0;
+      EX_MEM_stall = 0;
+    end
+    else begin
+      IF_ID_stall = 1;
+      ID_EX_stall = 1;
+      EX_MEM_stall = 1;
+    end
+  end
+  else begin
+    IF_ID_stall = 0;
+    ID_EX_stall = 0;
+    EX_MEM_stall = 0;
+  end
+end
 
 endmodule
