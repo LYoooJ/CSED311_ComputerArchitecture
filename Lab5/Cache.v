@@ -27,11 +27,11 @@ module Cache #(parameter LINE_SIZE = 16, //block size
 
   // Reg declarations
   /////////////bank registers////////////////
-  reg [0:LINE_SIZE-1] data_bank [0:NUM_SETS-1];
-  reg valid_bank [0:NUM_SETS-1];
-  reg dirty_bank [0:NUM_SETS-1];
-  reg lru_bank [0:NUM_SETS-1];
-  reg [24:0] tag_bank [0:NUM_SETS-1];
+  reg [0:LINE_SIZE-1] data_bank [0:NUM_SETS-1][0:NUM_WAYS-1];
+  reg valid_bank [0:NUM_SETS-1][0:NUM_WAYS-1];
+  reg dirty_bank [0:NUM_SETS-1][0:NUM_WAYS-1];
+  reg lru_bank [0:NUM_SETS-1][0:NUM_WAYS-1];
+  reg [24:0] tag_bank [0:NUM_SETS-1][0:NUM_WAYS-1];
 
   /////////////data mem reg signal regs////////////////
   reg [0:LINE_SIZE-1] data_out; //data memory output
