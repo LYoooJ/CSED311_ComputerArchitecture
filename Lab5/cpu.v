@@ -576,8 +576,7 @@ Cache cache (
 
     .is_input_valid(is_input_valid),
     .addr(EX_MEM_alu_out),
-    .mem_read(EX_MEM_mem_read),
-    .mem_write(EX_MEM_mem_write),
+    .mem_rw(EX_MEM_mem_read), //read 연결로 충분한 지 확인
     .din(EX_MEM_dmem_data),
 
     .is_ready(is_ready),
