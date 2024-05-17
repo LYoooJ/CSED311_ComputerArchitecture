@@ -125,7 +125,7 @@ module Cache #(parameter LINE_SIZE = 16, //block size
           end
       end
           
-      2'b10: begin //write back
+      2'b10: begin //write back 메모리가 준비 되었을 때 쓰는 작업
         if(is_data_mem_ready) begin
           mem_addr = {tag_bank[idx], idx, block_offset, 4'b0000};
           mem_rw = 1'b1; //write
@@ -135,7 +135,7 @@ module Cache #(parameter LINE_SIZE = 16, //block size
           end
         end
       end
-      2'b11: begin // write allocate
+      2'b11: begin // write allocate 읽어오기
         if(is_data_mem_ready) begin
           mem_addr = {tag, idx, block_offset, 4'b0000};
           if(is_ready) begin
@@ -166,8 +166,8 @@ module Cache #(parameter LINE_SIZE = 16, //block size
     .reset(reset),
     .clk(clk),
 
-    .is_input_valid(is_input_valid),
-    .addr(mem_addr >> CLOG2(mem_addr)),        // NOTE: address must be shifted by CLOG2(LINE_SIZE)
+    .is_input_valid(is_input_valid), //다시
+    .addr(mem_addr >> CLOG2(16)),        // NOTE: address must be shifted by CLOG2(LINE_SIZE)
     .mem_read(mem_rw == 1'b1),
     .mem_write(mem_rw == 1'b0),
     .din(din), //써야 할 data

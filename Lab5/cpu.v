@@ -401,12 +401,15 @@ module cpu(input reset,       // positive reset signal
   // ---------- Data Memory ----------
   DataMemory dmem(
     .reset (reset),                         // input
-    .clk (clk),                             // input
+    .clk (clk),  
+    .is_input_valid(is_input_valid),                           // input
     .addr (EX_MEM_alu_out),                 // input
     .din (EX_MEM_dmem_data),                // input
     .mem_read (EX_MEM_mem_read),            // input
     .mem_write (EX_MEM_mem_write),          // input
+    .is_output_valid(is_output_valid),       // output
     .dout (ReadData)                        // output
+    .mem_ready(mem_ready)                    // output
   );
 
   // Update MEM/WB pipeline registers here
