@@ -183,7 +183,6 @@ module cpu(input reset,       // positive reset signal
     .clk(clk),                // input
     .PCwrite(PCUpdate),        // input
     .next_pc(next_pc),        // input
-    .stall(stall),
     .current_pc(current_pc)   // output
   );
 
@@ -227,12 +226,12 @@ module cpu(input reset,       // positive reset signal
   //   $display("MEM_WB_inst: %x", MEM_WB_inst[31:0]);
   // end
 
-  always @(posedge clk) begin
-    $display("EX_MEM_inst: %x", EX_MEM_inst[31:0]);  
-    $display("EX_MEM_mem_read: %b", EX_MEM_mem_read);
-    $display("EX_MEM_mem_write: %b", EX_MEM_mem_write);
-    $display("MEM_WB_inst: %x", MEM_WB_inst[31:0]);
-  end
+  // always @(posedge clk) begin
+  //   $display("EX_MEM_inst: %x", EX_MEM_inst[31:0]);  
+  //   $display("EX_MEM_mem_read: %b", EX_MEM_mem_read);
+  //   $display("EX_MEM_mem_write: %b", EX_MEM_mem_write);
+  //   $display("MEM_WB_inst: %x", MEM_WB_inst[31:0]);
+  // end
 
   // Update IF/ID pipeline registers here
   always @(posedge clk) begin
@@ -626,7 +625,7 @@ Cache cache (
     .reset(reset),
     .clk(clk),
 
-    .is_input_valid(is_input_valid),
+    .is_input_valid(input_valid),
     .addr(EX_MEM_alu_out),
     .mem_rw(EX_MEM_mem_write), //read 연결로 충분한 지 확인
     .din(EX_MEM_dmem_data),
@@ -636,6 +635,22 @@ Cache cache (
     .dout(ReadData),
     .is_hit(is_hit)
 );
+
+wire ID_EX_input_valid = ID_EX_mem_write;
+wire EX_MEM_input_valid = EX_MEM_mem_write;
+reg mem_rw;
+
+// 확인 필요
+reg input_valid;
+
+always @(*) begin
+  if (is_ready ) begin
+    input_valid = (ID_EX_mem_read || ID_EX_mem_write);
+  end
+  else begin
+    input_valid = (EX_MEM_mem_read || EX_MEM_mem_write);
+  end
+end
 
 always @(*) begin
   if (is_input_valid) begin

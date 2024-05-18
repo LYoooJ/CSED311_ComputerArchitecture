@@ -60,6 +60,11 @@ module Cache #(parameter LINE_SIZE = 16, //block size
   assign block_0_valid = valid_bank[idx][0] == 1'b1 ? 1'b1 : 1'b0;
   assign block_1_valid = valid_bank[idx][1] == 1'b1 ? 1'b1 : 1'b0;
 
+  // always @(posedge clk) begin
+  //   $display("Set %d, block 0 valid : %b", idx, block_0_valid);
+  //   $display("Set %d, block 1 valid : %b", idx, block_1_valid);
+  // end
+
   /////////////bank registers////////////////
   reg [LINE_SIZE*8-1:0] data_bank [NUM_SETS-1:0][NUM_WAYS-1:0];
   reg valid_bank [NUM_SETS-1:0][NUM_WAYS-1:0];
@@ -74,7 +79,7 @@ module Cache #(parameter LINE_SIZE = 16, //block size
   
   // 조건 다시 확인!!
   // assign is_output_valid = (current_state == `Compare_Tag && cache_hit == `Cache_Hit) ? 1'b1 : 1'b0;
-  assign is_output_valid = (is_input_valid && ((current_state == `Compare_Tag && cache_hit == `Cache_Hit) || current_state == `Idle));
+  assign is_output_valid = ((current_state == `Compare_Tag && cache_hit == `Cache_Hit) || current_state == `Idle);
   assign is_hit = (cache_hit == `Cache_Hit) ? 1'b1 : 1'b0;
 
   always @(posedge clk) begin
@@ -85,31 +90,32 @@ module Cache #(parameter LINE_SIZE = 16, //block size
         data_bank[i][0] <= 0;
         data_bank[i][1] <= 0;
         valid_bank[i][0] <= 0;
-        valid_bank[i][0] <= 0;
+        valid_bank[i][1] <= 0;
         dirty_bank[i][0] <= 0;
         dirty_bank[i][1] <= 0;
         lru_bank[i] <= 0;
       end
+      //$display("====== reset ========");
       current_state <= `Idle; 
     end
     else begin
       case(current_state) 
         `Idle: begin
-          $display("------- Idle -------");
+          //$display("------- Idle -------");
           if (is_input_valid) begin // Load나 Store 들어오면
             current_state <= `Compare_Tag;
           end
         end
         `Compare_Tag: begin
-          $display("------- Compare Tag -------");
+          //$display("------- Compare Tag -------");
           //$display("request addr: 0x%x", addr);
-          //$display("data_bank[%d][%d]: %x", idx, allocate_block_idx, data_bank[idx][allocate_block_idx]);
-          //$display("tag_bank[%d][%d]: %x", idx, allocate_block_idx, tag_bank[idx][allocate_block_idx]);
-          //$display("dirty_bank[%d][%d] = %d", idx, allocate_block_idx, dirty_bank[idx][allocate_block_idx]);
-          //$display("valid_bank[%d][%d] = %d", idx, allocate_block_idx, valid_bank[idx][allocate_block_idx]);
+          // $display("data_bank[%d][%d]: %x", idx, allocate_block_idx, data_bank[idx][allocate_block_idx]);
+          // $display("tag_bank[%d][%d]: %x", idx, allocate_block_idx, tag_bank[idx][allocate_block_idx]);
+          // $display("dirty_bank[%d][%d] = %d", idx, allocate_block_idx, dirty_bank[idx][allocate_block_idx]);
+          // $display("valid_bank[%d][%d] = %d", idx, allocate_block_idx, valid_bank[idx][allocate_block_idx]);
           
           if (cache_hit == `Cache_Hit) begin
-            $display("Cache Hit!");
+            //$display("Cache Hit!");
             lru_bank[idx] <= way; // LRU에 Set에서 접근한 block index 기록
             if (mem_write) begin
               //$display("Cache(mem_write)");
@@ -117,11 +123,11 @@ module Cache #(parameter LINE_SIZE = 16, //block size
               //$display("dirty_bank[%d][%d] <= %d", idx, way, 1);
               data_bank[idx][way] <= write_data;
               dirty_bank[idx][way] <= 1;
-              current_state <= `Idle;
             end 
+            current_state <= `Idle;
           end
           else begin
-            $display("Cache Miss!");
+            //$display("Cache Miss!");
             if (set_status == `Empty_Block) begin // Set에 빈 block이 있는 경우
               //$display("There is empty block, block %d", empty_block_idx);
               current_state <= `Allocate;
@@ -129,24 +135,26 @@ module Cache #(parameter LINE_SIZE = 16, //block size
             end
             else begin  // Set에 빈 block이 없는 경우(evict 후 allocate)
               allocate_block_idx <= !lru_bank[idx]; // Set에서 오래 접근 안된 block으로!!
+              //$display("There is No Empty BLOCK");
               if (dirty_bank[idx][!lru_bank[idx]] == 1) begin
+                //$display("old block %d is dirty", !lru_bank[idx]);
                 current_state <= `Write_Back;
               end 
               else begin
+                //$display("old block %d is clean", !lru_bank[idx]);
                 current_state <= `Allocate;
               end
             end
           end
-          //mem_input_valid <= 0;
         end
         `Write_Back: begin
-          $display("------- Write Back -------");
+          //$display("------- Write Back -------");
           if (is_data_mem_ready) begin
             current_state <= `Allocate;
           end
         end
         `Allocate: begin
-          $display("------- Allocate -------");
+          //$display("------- Allocate -------");
           if (is_data_mem_ready) begin
             if (mem_output_valid) begin
               data_bank[idx][allocate_block_idx] <= data_out;
@@ -274,4 +282,11 @@ module Cache #(parameter LINE_SIZE = 16, //block size
     // is data memory ready to accept request?
     .mem_ready(is_data_mem_ready)
   );
+
+  // always @(data_bank) begin
+  //   $display("data_bank[%d][%d] <= %x", idx, allocate_block_idx, data_bank[idx][allocate_block_idx]);
+  //   $display("tag_bank[%d][%d] <= %x", idx, allocate_block_idx, tag_bank[idx][allocate_block_idx]);
+  //   $display("valid_bank[%d][%d] <= %b", idx, allocate_block_idx, valid_bank[idx][allocate_block_idx]);
+  //   $display("dirty_bank[%d][%d] <= %b", idx, allocate_block_idx, dirty_bank[idx][allocate_block_idx]);
+  // end
 endmodule

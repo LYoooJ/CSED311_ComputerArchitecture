@@ -20,7 +20,7 @@ module RegisterFile(input	reset,
     if (clk==0) begin
       if (write_enable & (rd != 0)) begin
         rf[rd] <= rd_din;
-        $display("rf[%d] <= %x", rd, rd_din);
+        //$display("rf[%d] <= %x", rd, rd_din);
       end
     end
     else begin
