@@ -101,7 +101,7 @@ module Cache #(parameter LINE_SIZE = 16, //block size
           end
         end
         `Compare_Tag: begin
-          //$display("------- Compare Tag -------");
+          $display("------- Compare Tag -------");
           //$display("request addr: 0x%x", addr);
           //$display("data_bank[%d][%d]: %x", idx, allocate_block_idx, data_bank[idx][allocate_block_idx]);
           //$display("tag_bank[%d][%d]: %x", idx, allocate_block_idx, tag_bank[idx][allocate_block_idx]);
@@ -112,9 +112,9 @@ module Cache #(parameter LINE_SIZE = 16, //block size
             $display("Cache Hit!");
             lru_bank[idx] <= way; // LRU에 Set에서 접근한 block index 기록
             if (mem_write) begin
-              $display("Cache(mem_write)");
-              $display("data_bank[%d][%d] <= %x", idx, way, write_data);
-              $display("dirty_bank[%d][%d] <= %d", idx, way, 1);
+              //$display("Cache(mem_write)");
+              //$display("data_bank[%d][%d] <= %x", idx, way, write_data);
+              //$display("dirty_bank[%d][%d] <= %d", idx, way, 1);
               data_bank[idx][way] <= write_data;
               dirty_bank[idx][way] <= 1;
               current_state <= `Idle;

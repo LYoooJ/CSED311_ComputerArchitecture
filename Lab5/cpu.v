@@ -181,10 +181,13 @@ module cpu(input reset,       // positive reset signal
   PC pc(
     .reset(reset),            // input (Use reset to initialize PC. Initial value must be 0)
     .clk(clk),                // input
-    .PCwrite(PCwrite),        // input
+    .PCwrite(PCUpdate),        // input
     .next_pc(next_pc),        // input
     .current_pc(current_pc)   // output
   );
+
+  wire PCUpdate;
+  assign PCUpdate = PCwrite && !stall;
 
   // ---------- Gshare ----------
   Gshare gshare(
@@ -211,13 +214,22 @@ module cpu(input reset,       // positive reset signal
     .dout(inst[31:0])         // output
   );
 
+  // always @(posedge clk) begin
+  //   $display("EX_MEM_inst: %x", EX_MEM_inst[31:0]);  
+  //   $display("EX_MEM_alu_output: %x", EX_MEM_alu_out);
+  //   $display("alu_control_lines: %b", alu_control_lines);
+  //   $display("Forward A: %b", ForwardA);
+  //   $display("alu_in_1: %x", alu_in_1);
+  //   $display("Forward B: %b", ForwardB);
+  //   $display("alu_in_2: %x", alu_in_2);
+  //   $display("alu_result: %x", alu_result);
+  //   $display("MEM_WB_inst: %x", MEM_WB_inst[31:0]);
+  // end
+
   always @(posedge clk) begin
     $display("EX_MEM_inst: %x", EX_MEM_inst[31:0]);  
-    $display("EX_MEM_alu_output: %x", EX_MEM_alu_out);
-    $display("alu_control_lines: %b", alu_control_lines);
-    $display("alu_in_1: %x", alu_in_1);
-    $display("alu_in_2: %x", alu_in_2);
-    $display("alu_result: %x", alu_result);
+    $display("EX_MEM_mem_read: %b", EX_MEM_mem_read);
+    $display("EX_MEM_mem_write: %b", EX_MEM_mem_write);
     $display("MEM_WB_inst: %x", MEM_WB_inst[31:0]);
   end
 
@@ -445,16 +457,17 @@ module cpu(input reset,       // positive reset signal
         MEM_WB_pc <= EX_MEM_pc;
         MEM_WB_inst <= EX_MEM_inst;
       end else begin
-        MEM_WB_mem_to_reg <= 0;    
-        MEM_WB_reg_write <= 0;     
-        MEM_WB_mem_to_reg_src_1 <= 0;
-        MEM_WB_mem_to_reg_src_2 <= 0;
-        MEM_WB_rd <= 0;
-        MEM_WB_is_halted <= 0;
-        MEM_WB_pc_to_reg <= 0;
-        MEM_WB_pc <= 0;
-        MEM_WB_inst <= 0;
+        // MEM_WB_mem_to_reg <= 0; // control   
+        // MEM_WB_reg_write <= 0;  // control
+        // MEM_WB_mem_to_reg_src_1 <= 0;
+        // MEM_WB_mem_to_reg_src_2 <= 0;
+        // MEM_WB_rd <= 0;
+        // MEM_WB_is_halted <= 0;
+        // MEM_WB_pc_to_reg <= 0;
+        // MEM_WB_pc <= 0;
+        // MEM_WB_inst <= 0;
       end
+      // -> Forwarding 때문에
     end
   end
 
