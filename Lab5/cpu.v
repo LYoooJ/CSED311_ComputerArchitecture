@@ -98,9 +98,7 @@ module cpu(input reset,       // positive reset signal
   assign is_input_valid = (EX_MEM_mem_write || EX_MEM_mem_read);
   assign pcSrc1 = (ID_EX_is_branch && alu_bcond) || ID_EX_is_jal;
 
-  reg IF_ID_stall;
-  reg ID_EX_stall;
-  reg EX_MEM_stall;
+  reg stall;
   // Control flow instruction이면서 pc 예측이 맞을 때 || non-control flow 일 때
   assign prediction_correct = (real_pc_target == ID_EX_next_pc) || !ID_EX_is_controlflow;
 
@@ -158,6 +156,7 @@ module cpu(input reset,       // positive reset signal
   reg EX_MEM_is_halted;
   reg EX_MEM_pc_to_reg;
   reg [31:0] EX_MEM_pc;
+  reg [31:0] EX_MEM_inst;
 
   /***** MEM/WB pipeline registers *****/
   // From the control unit
@@ -166,6 +165,7 @@ module cpu(input reset,       // positive reset signal
   reg MEM_WB_is_halted;
   reg MEM_WB_pc_to_reg;
   reg [31:0] MEM_WB_pc;
+  reg [31:0] MEM_WB_inst;
 
   // From others
   reg [31:0] MEM_WB_mem_to_reg_src_1;
@@ -212,7 +212,13 @@ module cpu(input reset,       // positive reset signal
   );
 
   always @(posedge clk) begin
-    $display("%x", inst[31:0]);  
+    $display("EX_MEM_inst: %x", EX_MEM_inst[31:0]);  
+    $display("EX_MEM_alu_output: %x", EX_MEM_alu_out);
+    $display("alu_control_lines: %b", alu_control_lines);
+    $display("alu_in_1: %x", alu_in_1);
+    $display("alu_in_2: %x", alu_in_2);
+    $display("alu_result: %x", alu_result);
+    $display("MEM_WB_inst: %x", MEM_WB_inst[31:0]);
   end
 
   // Update IF/ID pipeline registers here
@@ -225,7 +231,7 @@ module cpu(input reset,       // positive reset signal
       IF_ID_pht_index <= 5'b0;
     end
     else begin
-      if(IFIDwrite == 1 && IF_ID_stall == 0) begin
+      if(IFIDwrite == 1 && stall == 0) begin
         IF_ID_inst <= inst;
         IF_ID_pc <= current_pc;
         IF_ID_next_pc <= next_pc;
@@ -306,7 +312,7 @@ module cpu(input reset,       // positive reset signal
     end
     else begin
       // From others 
-      if (!ID_EX_stall) begin
+      if (!stall) begin
         ID_EX_inst <= IF_ID_inst;
         ID_EX_rs1_data <= mux_forward_out;
         ID_EX_rs2_data <= rs2_dout;
@@ -393,10 +399,10 @@ module cpu(input reset,       // positive reset signal
       EX_MEM_is_halted <= 0;
       EX_MEM_pc_to_reg <= 0;
       EX_MEM_pc <= 0;
+      EX_MEM_inst <= 0;
     end
     else begin
-      if (!EX_MEM_stall) begin
-        $display("stall!");
+      if (!stall) begin
         EX_MEM_mem_write <= ID_EX_mem_write;     
         EX_MEM_mem_read <= ID_EX_mem_read;      
         EX_MEM_mem_to_reg <= ID_EX_mem_to_reg;   
@@ -407,23 +413,12 @@ module cpu(input reset,       // positive reset signal
         EX_MEM_is_halted <= ID_EX_is_halted;
         EX_MEM_pc_to_reg <= ID_EX_pc_to_reg;
         EX_MEM_pc <= ID_EX_pc;
+        EX_MEM_inst <= ID_EX_inst;
+      end else begin
+        //$display("stall!");
       end
     end
   end
-
-  // // ---------- Data Memory ----------
-  // DataMemory dmem(
-  //   .reset (reset),                         // input
-  //   .clk (clk),  
-  //   .is_input_valid(is_input_valid),                           // input
-  //   .addr (EX_MEM_alu_out),                 // input
-  //   .din (EX_MEM_dmem_data),                // input
-  //   .mem_read (EX_MEM_mem_read),            // input
-  //   .mem_write (EX_MEM_mem_write),          // input
-  //   .is_output_valid(is_output_valid),       // output
-  //   .dout (ReadData),                        // output
-  //   .mem_ready(is_data_mem_ready)                    // output
-  // );
 
   // Update MEM/WB pipeline registers here
   always @(posedge clk) begin
@@ -436,18 +431,45 @@ module cpu(input reset,       // positive reset signal
       MEM_WB_is_halted <= 0;
       MEM_WB_pc_to_reg <= 0;
       MEM_WB_pc <= 0;
+      MEM_WB_inst <= 0;
     end
     else begin
-      MEM_WB_mem_to_reg <= EX_MEM_mem_to_reg;   
-      MEM_WB_reg_write <= EX_MEM_reg_write;   
-      MEM_WB_mem_to_reg_src_1 <= EX_MEM_alu_out;
-      MEM_WB_mem_to_reg_src_2 <= ReadData;
-      MEM_WB_rd <= EX_MEM_rd;
-      MEM_WB_is_halted <= EX_MEM_is_halted;
-      MEM_WB_pc_to_reg <= EX_MEM_pc_to_reg;
-      MEM_WB_pc <= EX_MEM_pc;
+      if (!stall) begin
+        MEM_WB_mem_to_reg <= EX_MEM_mem_to_reg;   
+        MEM_WB_reg_write <= EX_MEM_reg_write;   
+        MEM_WB_mem_to_reg_src_1 <= EX_MEM_alu_out;
+        MEM_WB_mem_to_reg_src_2 <= ReadData;
+        MEM_WB_rd <= EX_MEM_rd;
+        MEM_WB_is_halted <= EX_MEM_is_halted;
+        MEM_WB_pc_to_reg <= EX_MEM_pc_to_reg;
+        MEM_WB_pc <= EX_MEM_pc;
+        MEM_WB_inst <= EX_MEM_inst;
+      end else begin
+        MEM_WB_mem_to_reg <= 0;    
+        MEM_WB_reg_write <= 0;     
+        MEM_WB_mem_to_reg_src_1 <= 0;
+        MEM_WB_mem_to_reg_src_2 <= 0;
+        MEM_WB_rd <= 0;
+        MEM_WB_is_halted <= 0;
+        MEM_WB_pc_to_reg <= 0;
+        MEM_WB_pc <= 0;
+        MEM_WB_inst <= 0;
+      end
     end
   end
+
+  // always @(*) begin
+  //   if (MEM_WB_reg_write) begin
+  //     $display("---------------");
+  //     $display("rd_din: %x", rd_din);
+  //     $display("rd: %d", MEM_WB_rd);  
+  //     $display("MEM_WB_mem_to_reg_src1: %x", MEM_WB_mem_to_reg_src_1);
+  //     $display("MEM_WB_mem_to_reg_src2: %x", MEM_WB_mem_to_reg_src_2);
+  //     $display("MEM_WB_mem_to_reg: %d", MEM_WB_mem_to_reg);
+  //     $display("mem_to_reg_mux_out: %x", mem_to_reg_mux_out);
+  //     $display("---------------");
+  //   end
+  // end
 
   // ---------- Hazard Detection Unit ----------
   HazardDetection HazardDetection(
@@ -597,27 +619,21 @@ Cache cache (
 
     .is_ready(is_ready),
     .is_output_valid(is_output_valid),
-    .dout(dout),
+    .dout(ReadData),
     .is_hit(is_hit)
 );
 
 always @(*) begin
   if (is_input_valid) begin
-    if (is_output_valid && is_hit) begin
-      IF_ID_stall = 0;
-      ID_EX_stall = 0;
-      EX_MEM_stall = 0;
+    if (is_output_valid && is_hit && is_ready) begin
+      stall = 0;
     end
     else begin
-      IF_ID_stall = 1;
-      ID_EX_stall = 1;
-      EX_MEM_stall = 1;
+      stall = 1;
     end
   end
   else begin
-    IF_ID_stall = 0;
-    ID_EX_stall = 0;
-    EX_MEM_stall = 0;
+    stall = 0;
   end
 end
 

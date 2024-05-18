@@ -35,6 +35,10 @@ module Cache #(parameter LINE_SIZE = 16, //block size
 
   wire mem_read;
   wire mem_write;
+
+  reg _mem_read;
+  reg _mem_write;
+
   reg [LINE_SIZE*8-1:0] mem_din;
   wire mem_output_valid;
   wire is_data_mem_ready;
@@ -87,33 +91,39 @@ module Cache #(parameter LINE_SIZE = 16, //block size
         lru_bank[i] <= 0;
       end
       current_state <= `Idle; 
-      //is_output_valid <= 0;
-      //is_hit <= 0;
-      //mem_input_valid <= 0;
     end
     else begin
       case(current_state) 
         `Idle: begin
-          if (is_input_valid) begin
+          $display("------- Idle -------");
+          if (is_input_valid) begin // Load나 Store 들어오면
             current_state <= `Compare_Tag;
           end
-          //mem_input_valid <= 0;
         end
         `Compare_Tag: begin
+          //$display("------- Compare Tag -------");
+          //$display("request addr: 0x%x", addr);
+          //$display("data_bank[%d][%d]: %x", idx, allocate_block_idx, data_bank[idx][allocate_block_idx]);
+          //$display("tag_bank[%d][%d]: %x", idx, allocate_block_idx, tag_bank[idx][allocate_block_idx]);
+          //$display("dirty_bank[%d][%d] = %d", idx, allocate_block_idx, dirty_bank[idx][allocate_block_idx]);
+          //$display("valid_bank[%d][%d] = %d", idx, allocate_block_idx, valid_bank[idx][allocate_block_idx]);
+          
           if (cache_hit == `Cache_Hit) begin
+            $display("Cache Hit!");
             lru_bank[idx] <= way; // LRU에 Set에서 접근한 block index 기록
-            //is_hit <= 1;
-            //is_output_valid <= 1;
             if (mem_write) begin
+              $display("Cache(mem_write)");
+              $display("data_bank[%d][%d] <= %x", idx, way, write_data);
+              $display("dirty_bank[%d][%d] <= %d", idx, way, 1);
               data_bank[idx][way] <= write_data;
               dirty_bank[idx][way] <= 1;
               current_state <= `Idle;
             end 
           end
           else begin
-            //is_hit <= 0;
-            //is_output_valid <= 0;
+            $display("Cache Miss!");
             if (set_status == `Empty_Block) begin // Set에 빈 block이 있는 경우
+              //$display("There is empty block, block %d", empty_block_idx);
               current_state <= `Allocate;
               allocate_block_idx <= empty_block_idx;
             end
@@ -130,18 +140,14 @@ module Cache #(parameter LINE_SIZE = 16, //block size
           //mem_input_valid <= 0;
         end
         `Write_Back: begin
+          $display("------- Write Back -------");
           if (is_data_mem_ready) begin
-            //mem_addr <= {tag_bank[idx][allocate_block_idx], idx, block_offset, 2'b00};
-            //mem_din <= data_bank[idx][allocate_block_idx];
-            //mem_input_valid <= 1;
             current_state <= `Allocate;
           end
         end
         `Allocate: begin
-          //mem_input_valid <= 0;
+          $display("------- Allocate -------");
           if (is_data_mem_ready) begin
-            //mem_addr <= addr;
-            //mem_input_valid <= 1;
             if (mem_output_valid) begin
               data_bank[idx][allocate_block_idx] <= data_out;
               tag_bank[idx][allocate_block_idx] <= tag;
@@ -163,21 +169,29 @@ module Cache #(parameter LINE_SIZE = 16, //block size
         mem_input_valid = 0;
         mem_din = 0;
         mem_addr = 0;
+        _mem_read = 0;
+        _mem_write = 0;
       end
       `Compare_Tag: begin
         mem_input_valid = 0;
         mem_din = 0;
         mem_addr = 0;
+        _mem_read = 0;
+        _mem_write = 0;
       end
       `Write_Back: begin
         mem_input_valid = 1;
         mem_din = data_bank[idx][allocate_block_idx];
         mem_addr = {tag_bank[idx][allocate_block_idx], idx, block_offset, 2'b00};
+        _mem_read = 0;
+        _mem_write = 1; 
       end
       `Allocate: begin  
         mem_input_valid = 1;
         mem_din = 0;
         mem_addr = addr;
+        _mem_read = 1;
+        _mem_write = 0;
       end
     endcase
   end
@@ -188,7 +202,7 @@ module Cache #(parameter LINE_SIZE = 16, //block size
       way = `Way_0;
       cache_hit = `Cache_Hit;
     end
-    else if (valid_bank[idx][1] == 1'b1 && tag_bank[idx][1] == tag)begin // Block 1 에서 hit
+    else if (valid_bank[idx][1] == 1'b1 && tag_bank[idx][1] == tag) begin // Block 1 에서 hit
       way = `Way_1;
       cache_hit = `Cache_Hit;
     end
@@ -250,8 +264,8 @@ module Cache #(parameter LINE_SIZE = 16, //block size
 
     .is_input_valid(mem_input_valid), //다시
     .addr(mem_addr >> 4),        // NOTE: address must be shifted by CLOG2(LINE_SIZE)
-    .mem_read(mem_read),
-    .mem_write(mem_write),
+    .mem_read(_mem_read),
+    .mem_write(_mem_write),
     .din(mem_din), //써야 할 data
 
     // is output from the data memory valid?

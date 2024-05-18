@@ -1,5 +1,5 @@
 module DataMemory #(parameter MEM_DEPTH = 16384,
-                    parameter DELAY = 50,
+                    parameter DELAY = 1,
                     parameter BLOCK_SIZE = 16) (
     input reset,
     input clk,
@@ -51,6 +51,7 @@ module DataMemory #(parameter MEM_DEPTH = 16384,
     // Write data to the memory
     else if (_mem_write && delay_counter == 0) begin
       mem[_mem_addr] <= _din;
+      $display("mem[%x] <= %x", _mem_addr, _din);
     end
   end
 
