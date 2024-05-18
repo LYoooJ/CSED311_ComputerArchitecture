@@ -183,6 +183,7 @@ module cpu(input reset,       // positive reset signal
     .clk(clk),                // input
     .PCwrite(PCwrite),        // input
     .next_pc(next_pc),        // input
+    .stall(stall),
     .current_pc(current_pc)   // output
   );
 
