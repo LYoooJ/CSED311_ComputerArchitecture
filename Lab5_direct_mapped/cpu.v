@@ -17,6 +17,8 @@ module cpu(input reset,       // positive reset signal
   wire [31:0] current_pc;
   wire [31:0] next_pc;
   wire [31:0] inst;
+  wire PCUpdate;
+  assign PCUpdate = PCwrite && !stall;
 
   /***** register wire *****/
   wire [31:0] rs1_dout;
@@ -76,19 +78,19 @@ module cpu(input reset,       // positive reset signal
 
   /**** Gshare ****/
   wire taken;
-  assign taken = ID_EX_is_jal || ID_EX_is_jalr || (alu_bcond & ID_EX_is_branch);
-
   wire [31:0] branch_target;
   wire [31:0] real_pc_target;
   wire prediction_correct;
-
   wire [4:0] accessed_pht_index;
-
   wire [31:0] increment_pc;
   wire [31:0] pcSrc1_mux_out;
   wire pcSrc1;
   wire [31:0] mem_to_reg_mux_out;
   wire [31:0] btb_next_pc;
+
+  assign pcSrc1 = (ID_EX_is_branch && alu_bcond) || ID_EX_is_jal;
+  assign taken = ID_EX_is_jal || ID_EX_is_jalr || (alu_bcond & ID_EX_is_branch);
+  assign prediction_correct = (real_pc_target == ID_EX_next_pc) || !ID_EX_is_controlflow;
 
   /***** cache *****/
   wire is_input_valid;
@@ -96,11 +98,6 @@ module cpu(input reset,       // positive reset signal
   wire is_output_valid;
   wire is_hit;
   assign is_input_valid = (EX_MEM_mem_write || EX_MEM_mem_read);
-  assign pcSrc1 = (ID_EX_is_branch && alu_bcond) || ID_EX_is_jal;
-
-  reg stall;
-  // Control flow instruction이면서 pc 예측이 맞을 때 || non-control flow 일 때
-  assign prediction_correct = (real_pc_target == ID_EX_next_pc) || !ID_EX_is_controlflow;
 
   /***** Register declarations *****/
   // You need to modify the width of registers
@@ -122,7 +119,6 @@ module cpu(input reset,       // positive reset signal
   reg ID_EX_mem_read;       // will be used in MEM stage
   reg ID_EX_mem_to_reg;     // will be used in WB stage
   reg ID_EX_reg_write;      // will be used in WB stage
-  //추가
   reg ID_EX_is_branch;
   reg ID_EX_is_jal;
   reg ID_EX_is_jalr;
@@ -172,10 +168,36 @@ module cpu(input reset,       // positive reset signal
   reg [31:0] MEM_WB_mem_to_reg_src_2;
   reg [4:0] MEM_WB_rd;
 
+  /***** Cache *****/
+  reg input_valid;
+  reg stall;
 
+  always @(*) begin
+    if (is_ready) begin
+      input_valid = (ID_EX_mem_read || ID_EX_mem_write);
+    end
+    else begin
+      input_valid = (EX_MEM_mem_read || EX_MEM_mem_write);
+    end
+  end
+
+  always @(*) begin
+    if (is_input_valid) begin
+      if (is_output_valid && is_hit && is_ready) begin
+        stall = 0;
+      end
+      else begin
+        stall = 1;
+      end
+    end
+    else begin
+      stall = 0;
+    end
+  end
+  
   assign halted_check = ((mux_forward_out == 10) && is_ecall && !hazardout) ? 1 : 0;
   assign is_halted = MEM_WB_is_halted;
-  
+
   // ---------- Update program counter ----------
   // PC must be updated on the rising edge (positive edge) of the clock.
   PC pc(
@@ -185,9 +207,6 @@ module cpu(input reset,       // positive reset signal
     .next_pc(next_pc),        // input
     .current_pc(current_pc)   // output
   );
-
-  wire PCUpdate;
-  assign PCUpdate = PCwrite && !stall;
 
   // ---------- Gshare ----------
   Gshare gshare(
@@ -213,25 +232,6 @@ module cpu(input reset,       // positive reset signal
     .addr(current_pc),        // input
     .dout(inst[31:0])         // output
   );
-
-  // always @(posedge clk) begin
-  //   $display("EX_MEM_inst: %x", EX_MEM_inst[31:0]);  
-  //   $display("EX_MEM_alu_output: %x", EX_MEM_alu_out);
-  //   $display("alu_control_lines: %b", alu_control_lines);
-  //   $display("Forward A: %b", ForwardA);
-  //   $display("alu_in_1: %x", alu_in_1);
-  //   $display("Forward B: %b", ForwardB);
-  //   $display("alu_in_2: %x", alu_in_2);
-  //   $display("alu_result: %x", alu_result);
-  //   $display("MEM_WB_inst: %x", MEM_WB_inst[31:0]);
-  // end
-
-  // always @(posedge clk) begin
-  //   $display("EX_MEM_inst: %x", EX_MEM_inst[31:0]);  
-  //   $display("EX_MEM_mem_read: %b", EX_MEM_mem_read);
-  //   $display("EX_MEM_mem_write: %b", EX_MEM_mem_write);
-  //   $display("MEM_WB_inst: %x", MEM_WB_inst[31:0]);
-  // end
 
   // Update IF/ID pipeline registers here
   always @(posedge clk) begin
@@ -426,9 +426,7 @@ module cpu(input reset,       // positive reset signal
         EX_MEM_pc_to_reg <= ID_EX_pc_to_reg;
         EX_MEM_pc <= ID_EX_pc;
         EX_MEM_inst <= ID_EX_inst;
-      end else begin
-        //$display("stall!");
-      end
+      end 
     end
   end
 
@@ -470,19 +468,6 @@ module cpu(input reset,       // positive reset signal
       // -> Forwarding 때문에
     end
   end
-
-  // always @(*) begin
-  //   if (MEM_WB_reg_write) begin
-  //     $display("---------------");
-  //     $display("rd_din: %x", rd_din);
-  //     $display("rd: %d", MEM_WB_rd);  
-  //     $display("MEM_WB_mem_to_reg_src1: %x", MEM_WB_mem_to_reg_src_1);
-  //     $display("MEM_WB_mem_to_reg_src2: %x", MEM_WB_mem_to_reg_src_2);
-  //     $display("MEM_WB_mem_to_reg: %d", MEM_WB_mem_to_reg);
-  //     $display("mem_to_reg_mux_out: %x", mem_to_reg_mux_out);
-  //     $display("---------------");
-  //   end
-  // end
 
   // ---------- Hazard Detection Unit ----------
   HazardDetection HazardDetection(
@@ -622,48 +607,18 @@ mux_2x1 mux(
 );
 
 Cache cache (
-    .reset(reset),
-    .clk(clk),
+    .reset(reset),                          // input
+    .clk(clk),                              // input
 
-    .is_input_valid(input_valid),
-    .addr(EX_MEM_alu_out),
-    .mem_rw(EX_MEM_mem_write), //read 연결로 충분한 지 확인
-    .din(EX_MEM_dmem_data),
+    .is_input_valid(input_valid),           // input
+    .addr(EX_MEM_alu_out),                  // input
+    .mem_rw(EX_MEM_mem_write),              // input
+    .din(EX_MEM_dmem_data),                 // input
 
-    .is_ready(is_ready),
-    .is_output_valid(is_output_valid),
-    .dout(ReadData),
-    .is_hit(is_hit)
+    .is_ready(is_ready),                    // output
+    .is_output_valid(is_output_valid),      // output
+    .dout(ReadData),                        // output
+    .is_hit(is_hit)                         // output
 );
-
-wire ID_EX_input_valid = ID_EX_mem_write;
-wire EX_MEM_input_valid = EX_MEM_mem_write;
-reg mem_rw;
-
-// 확인 필요
-reg input_valid;
-
-always @(*) begin
-  if (is_ready ) begin
-    input_valid = (ID_EX_mem_read || ID_EX_mem_write);
-  end
-  else begin
-    input_valid = (EX_MEM_mem_read || EX_MEM_mem_write);
-  end
-end
-
-always @(*) begin
-  if (is_input_valid) begin
-    if (is_output_valid && is_hit && is_ready) begin
-      stall = 0;
-    end
-    else begin
-      stall = 1;
-    end
-  end
-  else begin
-    stall = 0;
-  end
-end
 
 endmodule
