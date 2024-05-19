@@ -214,25 +214,6 @@ module cpu(input reset,       // positive reset signal
     .dout(inst[31:0])         // output
   );
 
-  // always @(posedge clk) begin
-  //   $display("EX_MEM_inst: %x", EX_MEM_inst[31:0]);  
-  //   $display("EX_MEM_alu_output: %x", EX_MEM_alu_out);
-  //   $display("alu_control_lines: %b", alu_control_lines);
-  //   $display("Forward A: %b", ForwardA);
-  //   $display("alu_in_1: %x", alu_in_1);
-  //   $display("Forward B: %b", ForwardB);
-  //   $display("alu_in_2: %x", alu_in_2);
-  //   $display("alu_result: %x", alu_result);
-  //   $display("MEM_WB_inst: %x", MEM_WB_inst[31:0]);
-  // end
-
-  // always @(posedge clk) begin
-  //   $display("EX_MEM_inst: %x", EX_MEM_inst[31:0]);  
-  //   $display("EX_MEM_mem_read: %b", EX_MEM_mem_read);
-  //   $display("EX_MEM_mem_write: %b", EX_MEM_mem_write);
-  //   $display("MEM_WB_inst: %x", MEM_WB_inst[31:0]);
-  // end
-
   // Update IF/ID pipeline registers here
   always @(posedge clk) begin
     if (reset) begin
@@ -426,8 +407,6 @@ module cpu(input reset,       // positive reset signal
         EX_MEM_pc_to_reg <= ID_EX_pc_to_reg;
         EX_MEM_pc <= ID_EX_pc;
         EX_MEM_inst <= ID_EX_inst;
-      end else begin
-        //$display("stall!");
       end
     end
   end
@@ -470,19 +449,6 @@ module cpu(input reset,       // positive reset signal
       // -> Forwarding 때문에
     end
   end
-
-  // always @(*) begin
-  //   if (MEM_WB_reg_write) begin
-  //     $display("---------------");
-  //     $display("rd_din: %x", rd_din);
-  //     $display("rd: %d", MEM_WB_rd);  
-  //     $display("MEM_WB_mem_to_reg_src1: %x", MEM_WB_mem_to_reg_src_1);
-  //     $display("MEM_WB_mem_to_reg_src2: %x", MEM_WB_mem_to_reg_src_2);
-  //     $display("MEM_WB_mem_to_reg: %d", MEM_WB_mem_to_reg);
-  //     $display("mem_to_reg_mux_out: %x", mem_to_reg_mux_out);
-  //     $display("---------------");
-  //   end
-  // end
 
   // ---------- Hazard Detection Unit ----------
   HazardDetection HazardDetection(
@@ -622,29 +588,24 @@ mux_2x1 mux(
 );
 
 Cache cache (
-    .reset(reset),
-    .clk(clk),
-
-    .is_input_valid(input_valid),
-    .addr(EX_MEM_alu_out),
-    .mem_rw(EX_MEM_mem_write), //read 연결로 충분한 지 확인
-    .din(EX_MEM_dmem_data),
-
-    .is_ready(is_ready),
-    .is_output_valid(is_output_valid),
-    .dout(ReadData),
-    .is_hit(is_hit)
+    .reset(reset),                          // input
+    .clk(clk),                              // input
+    .is_input_valid(input_valid),           // input
+    .addr(EX_MEM_alu_out),                  // input
+    .mem_rw(EX_MEM_mem_write),              // input
+    .din(EX_MEM_dmem_data),                 // input
+    .is_ready(is_ready),                    // output
+    .is_output_valid(is_output_valid),      // output
+    .dout(ReadData),                        // output
+    .is_hit(is_hit)                         // output
 );
 
-wire ID_EX_input_valid = ID_EX_mem_write;
-wire EX_MEM_input_valid = EX_MEM_mem_write;
 reg mem_rw;
 
-// 확인 필요
 reg input_valid;
 
 always @(*) begin
-  if (is_ready ) begin
+  if (is_ready) begin
     input_valid = (ID_EX_mem_read || ID_EX_mem_write);
   end
   else begin

@@ -18,10 +18,8 @@ module RegisterFile(input	reset,
 
   always @(clk) begin
     if (clk==0) begin
-      if (write_enable & (rd != 0)) begin
+      if (write_enable & (rd != 0))
         rf[rd] <= rd_din;
-        //$display("rf[%d] <= %x", rd, rd_din);
-      end
     end
     else begin
       if (reset) begin
